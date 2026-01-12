@@ -35,6 +35,18 @@ When invoked, the command will:
 
 **Default models** are configured in `data/user-defaults.json`.
 
+### Image Support
+
+Paste an image into your message along with your question to have vision-capable models analyse it:
+
+```
+/amm "What's in this image?" [paste image]
+```
+
+Vision-capable models: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Gemini 2.5 Flash
+
+Models without vision support will receive just the text prompt with a note that an image was provided.
+
 ### Direct Script Invocation
 
 Run the query script directly:
@@ -48,6 +60,7 @@ Options:
 - `--preset <name>` - Use a preset: `quick`, `frontier`, `comprehensive`
 - `--models <list>` - Specify models: `gpt-4o,gemini-2.0-flash`
 - `--timeout <seconds>` - Timeout per model (default: 180)
+- `--image <path>` - Include an image file for vision models
 
 ### Available Commands
 
@@ -199,18 +212,18 @@ multi-model-responses/
 
 ## Available Models
 
-| Model ID | Display Name | Provider |
-|----------|--------------|----------|
-| gpt-5.2-thinking | GPT-5.2 Thinking | OpenAI |
-| claude-4.5-opus-thinking | Claude 4.5 Opus Thinking | Anthropic |
-| grok-4 | Grok 4 | xAI |
-| gemini-3-pro | Gemini 3 Pro | Google |
-| gpt-5.2 | GPT-5.2 | OpenAI |
-| gpt-5.2-pro | GPT-5.2 Pro | OpenAI |
-| claude-4.5-opus | Claude 4.5 Opus | Anthropic |
-| claude-4-sonnet | Claude 4 Sonnet | Anthropic |
-| gemini-2.5-flash | Gemini 2.5 Flash | Google |
-| grok-4.1 | Grok 4.1 | xAI |
+| Model ID | Display Name | Provider | Vision |
+|----------|--------------|----------|--------|
+| gpt-5.2-thinking | GPT-5.2 Thinking | OpenAI | ✓ |
+| claude-4.5-opus-thinking | Claude 4.5 Opus Thinking | Anthropic | ✓ |
+| grok-4 | Grok 4 | xAI | |
+| gemini-3-pro | Gemini 3 Pro | Google | ✓ |
+| gpt-5.2 | GPT-5.2 | OpenAI | ✓ |
+| gpt-5.2-pro | GPT-5.2 Pro | OpenAI | ✓ |
+| claude-4.5-opus | Claude 4.5 Opus | Anthropic | ✓ |
+| claude-4-sonnet | Claude 4 Sonnet | Anthropic | ✓ |
+| gemini-2.5-flash | Gemini 2.5 Flash | Google | ✓ |
+| grok-4.1 | Grok 4.1 | xAI | |
 
 ## Notifications
 

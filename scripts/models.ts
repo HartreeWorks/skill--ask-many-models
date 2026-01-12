@@ -6,7 +6,7 @@ import { openai } from '@ai-sdk/openai';
 import { google } from '@ai-sdk/google';
 import { xai } from '@ai-sdk/xai';
 import { anthropic } from '@ai-sdk/anthropic';
-import type { LanguageModelV1 } from 'ai';
+import type { LanguageModel } from 'ai';
 
 export interface ModelConfig {
   provider: 'openai' | 'google' | 'xai' | 'anthropic';
@@ -44,7 +44,7 @@ export interface Config {
 /**
  * Create a Vercel AI SDK model instance from config
  */
-export function createModel(modelName: string, config: Config): LanguageModelV1 | null {
+export function createModel(modelName: string, config: Config): LanguageModel | null {
   const modelConfig = config.models[modelName];
 
   if (!modelConfig) {

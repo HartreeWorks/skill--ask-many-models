@@ -1,6 +1,6 @@
 ---
 description: Query multiple AI models in parallel and synthesise responses
-allowed-tools: Bash, Read, Glob, AskUserQuestion, Edit
+allowed-tools: Bash, Read, Glob, AskUserQuestion, Edit, Write
 arguments:
   - name: prompt
     description: The question or prompt to send to all models
@@ -12,6 +12,16 @@ arguments:
 Query multiple AI models with the given prompt and synthesise their responses.
 
 ## Execution Steps
+
+### Step 0: Check for images
+
+Check if there are any images in the recent conversation context (i.e., the user's message that triggered this command).
+
+If an image is present:
+1. Save it to `/Users/ph/.claude/skills/ask-many-models/multi-model-responses/image-TIMESTAMP.png` (use actual timestamp)
+2. Note the path - you'll pass it to the query command later with `--image <path>`
+
+Vision-capable models (GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Gemini 2.5 Flash) will receive the image. Other models will receive just the text prompt with a note that an image was provided.
 
 ### Step 1: Read defaults and config
 
@@ -59,8 +69,10 @@ echo "/Users/ph/.claude/skills/ask-many-models/multi-model-responses/$(date +%Y-
 Convert the selected model display names back to model IDs and run:
 
 ```bash
-cd /Users/ph/.claude/skills/ask-many-models && yarn query --models "<comma-separated-model-ids>" --live-file "<live-file-path>" "$prompt"
+cd /Users/ph/.claude/skills/ask-many-models && yarn query --models "<comma-separated-model-ids>" --live-file "<live-file-path>" [--image "<image-path>"] "$prompt"
 ```
+
+If an image was saved in Step 0, include `--image "<image-path>"` in the command.
 
 ### Step 5: Confirm and open the file
 

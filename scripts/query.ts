@@ -11,8 +11,8 @@
 import 'dotenv/config';
 import { program } from 'commander';
 import { generateText } from 'ai';
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from 'fs';
+import { join, dirname, basename, extname } from 'path';
 import { fileURLToPath } from 'url';
 import {
   createModel,
@@ -65,12 +65,25 @@ interface ModelResult {
   tokensUsed?: number;
 }
 
+// Models known to support vision
+const VISION_MODELS = [
+  'gpt-5.2-thinking',
+  'gpt-5.2',
+  'gpt-5.2-pro',
+  'claude-4.5-opus-thinking',
+  'claude-4.5-opus',
+  'claude-4-sonnet',
+  'gemini-3-pro',
+  'gemini-2.5-flash',
+];
+
 // Query a single model
 async function queryModel(
   modelName: string,
   prompt: string,
   config: Config,
-  timeoutMs: number
+  timeoutMs: number,
+  imagePath?: string
 ): Promise<ModelResult> {
   const startTime = Date.now();
 
@@ -86,16 +99,54 @@ async function queryModel(
   const modelConfig = config.models[modelName];
   const maxTokens = modelConfig?.max_tokens || config.defaults.max_tokens;
 
+  // Check if we have an image and if this model supports vision
+  const hasImage = imagePath && existsSync(imagePath);
+  const supportsVision = VISION_MODELS.includes(modelName);
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-    const result = await generateText({
-      model,
-      prompt,
-      maxTokens,
-      abortSignal: controller.signal,
-    });
+    let result;
+
+    if (hasImage && supportsVision) {
+      // Use multimodal message with image
+      const imageBuffer = readFileSync(imagePath);
+      const ext = extname(imagePath).toLowerCase();
+      const mediaType = ext === '.png' ? 'image/png' :
+                       ext === '.gif' ? 'image/gif' :
+                       ext === '.webp' ? 'image/webp' : 'image/jpeg';
+
+      result = await generateText({
+        model,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', image: imageBuffer, mediaType },
+            { type: 'text', text: prompt },
+          ],
+        }],
+        maxOutputTokens: maxTokens,
+        abortSignal: controller.signal,
+      });
+    } else if (hasImage && !supportsVision) {
+      // Model doesn't support vision - add note to prompt
+      const modifiedPrompt = `[Note: An image was provided but ${modelName} doesn't support vision.]\n\n${prompt}`;
+      result = await generateText({
+        model,
+        prompt: modifiedPrompt,
+        maxOutputTokens: maxTokens,
+        abortSignal: controller.signal,
+      });
+    } else {
+      // Text-only query
+      result = await generateText({
+        model,
+        prompt,
+        maxOutputTokens: maxTokens,
+        abortSignal: controller.signal,
+      });
+    }
 
     clearTimeout(timeout);
 
@@ -134,10 +185,14 @@ function normaliseHeadings(text: string): string {
 }
 
 // Create initial live markdown file with model headings
-function createLiveFile(filePath: string, prompt: string, modelNames: string[]): void {
+function createLiveFile(filePath: string, prompt: string, modelNames: string[], imagePath?: string): void {
   const now = new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris' });
   let content = `# Multi-Model Query\n\n`;
   content += `**Prompt:** ${prompt}\n\n`;
+  if (imagePath) {
+    const imageFilename = basename(imagePath);
+    content += `**Image:** ${imageFilename}\n\n`;
+  }
   content += `**Time:** ${now}\n\n`;
   content += `---\n\n`;
 
@@ -180,24 +235,29 @@ async function queryModels(
   prompt: string,
   config: Config,
   timeoutSeconds: number,
-  liveFilePath?: string
+  liveFilePath?: string,
+  imagePath?: string
 ): Promise<ModelResult[]> {
   const timeoutMs = timeoutSeconds * 1000;
 
   console.log(`\nQuerying ${modelNames.length} models in parallel...`);
   console.log(`Models: ${modelNames.join(', ')}`);
+  if (imagePath) {
+    console.log(`Image: ${imagePath}`);
+    console.log(`Vision models: ${modelNames.filter(m => VISION_MODELS.includes(m)).join(', ') || 'none'}`);
+  }
   console.log(`Timeout: ${timeoutSeconds}s\n`);
 
   // Create live file if specified
   if (liveFilePath) {
-    createLiveFile(liveFilePath, prompt, modelNames);
+    createLiveFile(liveFilePath, prompt, modelNames, imagePath);
     console.log(`Live file: ${liveFilePath}\n`);
   }
 
   // Query all models and update live file as each completes
   const results: ModelResult[] = [];
   const promises = modelNames.map(async (model) => {
-    const result = await queryModel(model, prompt, config, timeoutMs);
+    const result = await queryModel(model, prompt, config, timeoutMs, imagePath);
     results.push(result);
 
     // Update live file immediately when this model completes
@@ -293,9 +353,16 @@ async function runQuery(
     output?: string;
     noSave?: boolean;
     liveFile?: string;
+    image?: string;
   }
 ): Promise<void> {
   const config = loadConfig();
+
+  // Validate image if provided
+  if (options.image && !existsSync(options.image)) {
+    console.error(`Image file not found: ${options.image}`);
+    process.exit(1);
+  }
 
   // Determine which models to query
   let modelNames: string[];
@@ -338,7 +405,7 @@ async function runQuery(
   }
 
   // Run queries
-  const results = await queryModels(modelNames, prompt, config, timeoutSeconds, options.liveFile);
+  const results = await queryModels(modelNames, prompt, config, timeoutSeconds, options.liveFile, options.image);
 
   // Save results
   if (!options.noSave) {
@@ -365,6 +432,7 @@ program
   .option('-t, --timeout <seconds>', 'Timeout per model in seconds', parseInt)
   .option('-o, --output <dir>', 'Output directory for responses')
   .option('-l, --live-file <path>', 'Markdown file to update live as responses arrive')
+  .option('-i, --image <path>', 'Image file to include with the prompt (vision models only)')
   .option('--no-save', 'Do not save responses to disk')
   .action(runQuery);
 
