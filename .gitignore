@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Environment
+.env
+
+# Build output
+dist/
+
+# Data files (contain user preferences)
+data/*.json
+!data/user-defaults.example.json
+
+# Response outputs (can be large)
+multi-model-responses/
+
+# Include config
+!config.json
