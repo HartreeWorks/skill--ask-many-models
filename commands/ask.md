@@ -107,6 +107,7 @@ After printing the synthesis to the console, insert it into the markdown file im
 | claude-4.5-opus-thinking | Claude 4.5 Opus Thinking | Anthropic |
 | grok-4 | Grok 4 | xAI |
 | gemini-3-pro | Gemini 3 Pro | Google |
+| gemini-3-flash | Gemini 3 Flash | Google |
 | gpt-5.2 | GPT-5.2 | OpenAI |
 | claude-4.5-opus | Claude 4.5 Opus | Anthropic |
 | gemini-2.5-flash | Gemini 2.5 Flash | Google |

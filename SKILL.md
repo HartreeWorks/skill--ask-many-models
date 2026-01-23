@@ -17,7 +17,27 @@ When users want to gather perspectives from multiple AI models (GPT, Gemini, Gro
 
 ## Quick Start
 
-### Claude Command (Recommended)
+### Terminal CLI (Fastest)
+
+Run `amm` directly from your terminal for instant model selection:
+
+```bash
+amm "What are the key considerations for X?"
+```
+
+Options:
+- `--quick` or `-q` - Skip model selection, use defaults
+- `--no-synthesise` - Skip the synthesis step
+
+The CLI will:
+1. Show an interactive model selector (using gum) with defaults pre-checked
+2. Query selected models in parallel
+3. Run automatic synthesis using Claude Opus 4.5 with extended thinking
+4. Open the results markdown file
+
+**Default models** are configured in `data/user-defaults.json`.
+
+### Claude Command
 
 Use the `/amm` command from any Claude Code session:
 
@@ -26,7 +46,7 @@ Use the `/amm` command from any Claude Code session:
 ```
 
 When invoked, the command will:
-1. Show a model selection dialog (defaults: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Grok 4, Gemini 3 Pro)
+1. Show a model selection dialog (defaults: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Grok 4, Gemini 3 Pro, Gemini 3 Flash)
 2. Create a live-updating markdown file with all responses
 3. Open the file automatically so you can watch responses come in
 4. Synthesise results once all models respond
@@ -218,6 +238,7 @@ multi-model-responses/
 | claude-4.5-opus-thinking | Claude 4.5 Opus Thinking | Anthropic | ✓ |
 | grok-4 | Grok 4 | xAI | |
 | gemini-3-pro | Gemini 3 Pro | Google | ✓ |
+| gemini-3-flash | Gemini 3 Flash | Google | ✓ |
 | gpt-5.2 | GPT-5.2 | OpenAI | ✓ |
 | gpt-5.2-pro | GPT-5.2 Pro | OpenAI | ✓ |
 | claude-4.5-opus | Claude 4.5 Opus | Anthropic | ✓ |

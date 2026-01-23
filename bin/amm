@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+#
+# amm - Ask Many Models CLI
+#
+# A fast CLI wrapper for querying multiple AI models in parallel.
+# Uses gum for interactive model selection with pre-checked defaults.
+#
+# Usage:
+#   amm "What is the meaning of life?"
+#   amm --quick "Explain X"
+#   amm --no-synthesise "Just get responses"
+#
+
+set -euo pipefail
+
+# Load nvm for node/yarn access
+export NVM_DIR="$HOME/.nvm"
+[ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
+
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CONFIG_FILE="$SKILL_DIR/config.json"
+DEFAULTS_FILE="$SKILL_DIR/data/user-defaults.json"
+RESPONSES_DIR="$SKILL_DIR/multi-model-responses"
+
+# Parse arguments
+SYNTHESISE=true
+SKIP_SELECT=false
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --no-synthesise|--no-synthesize)
+            SYNTHESISE=false
+            shift
+            ;;
+        --quick|-q)
+            SKIP_SELECT=true
+            shift
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [[ $# -lt 1 ]]; then
+    echo "Usage: amm [options] \"Your prompt here\""
+    echo ""
+    echo "Options:"
+    echo "  --quick, -q        Skip model selection, use defaults"
+    echo "  --no-synthesise    Skip synthesis step"
+    echo ""
+    exit 1
+fi
+
+PROMPT="$1"
+
+# Read default models from user-defaults.json
+DEFAULT_MODELS=$(jq -r '.default_models[]' "$DEFAULTS_FILE")
+
+# Read all available API models from config.json (exclude browser models)
+ALL_MODELS=$(jq -r '.models | to_entries | map(select(.value.type == "api")) | .[].key' "$CONFIG_FILE")
+
+# Build the gum choose options
+# Default models will be pre-selected
+if [[ "$SKIP_SELECT" == "true" ]]; then
+    SELECTED_MODELS="$DEFAULT_MODELS"
+else
+    # Build options array with defaults marked as selected
+    OPTIONS=()
+    SELECTED=()
+
+    for model in $ALL_MODELS; do
+        OPTIONS+=("$model")
+        # Check if this model is in defaults
+        if echo "$DEFAULT_MODELS" | grep -q "^${model}$"; then
+            SELECTED+=("$model")
+        fi
+    done
+
+    # Build gum command with --selected for defaults
+    SELECTED_ARGS=""
+    for sel in "${SELECTED[@]}"; do
+        SELECTED_ARGS="$SELECTED_ARGS --selected=\"$sel\""
+    done
+
+    echo "Select models to query:"
+    echo "  ↑/↓ navigate  •  space toggle  •  enter confirm"
+    echo ""
+
+    # Use eval to handle the dynamic --selected args
+    SELECTED_MODELS=$(eval "gum choose --no-limit --height=15 --cursor-prefix='[ ] ' --selected-prefix='[✓] ' --unselected-prefix='[ ] ' $SELECTED_ARGS ${OPTIONS[*]}" || true)
+
+    if [[ -z "$SELECTED_MODELS" ]]; then
+        echo "No models selected, using defaults."
+        SELECTED_MODELS="$DEFAULT_MODELS"
+    fi
+fi
+
+# Convert newline-separated to comma-separated
+MODELS_CSV=$(echo "$SELECTED_MODELS" | tr '\n' ',' | sed 's/,$//')
+
+# Generate output file path
+TIMESTAMP=$(date +%Y-%m-%d-%H%M)
+SLUG=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//' | cut -c1-50)
+LIVE_FILE="$RESPONSES_DIR/${TIMESTAMP}-${SLUG}.md"
+
+echo ""
+echo "Querying: $MODELS_CSV"
+echo "Output: $LIVE_FILE"
+echo ""
+
+# Build the query command
+QUERY_CMD="yarn --cwd \"$SKILL_DIR\" query --models \"$MODELS_CSV\" --live-file \"$LIVE_FILE\""
+
+if [[ "$SYNTHESISE" == "true" ]]; then
+    QUERY_CMD="$QUERY_CMD --synthesise"
+fi
+
+QUERY_CMD="$QUERY_CMD \"$PROMPT\""
+
+# Run the query
+eval "$QUERY_CMD"
+
+# Open the file
+echo ""
+echo "Opening results..."
+open "$LIVE_FILE"

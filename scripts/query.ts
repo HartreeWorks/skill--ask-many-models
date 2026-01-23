@@ -11,7 +11,8 @@
 import 'dotenv/config';
 import { program } from 'commander';
 import { generateText } from 'ai';
-import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from 'fs';
+import { anthropic } from '@ai-sdk/anthropic';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync, appendFileSync } from 'fs';
 import { join, dirname, basename, extname } from 'path';
 import { fileURLToPath } from 'url';
 import {
@@ -74,6 +75,7 @@ const VISION_MODELS = [
   'claude-4.5-opus',
   'claude-4-sonnet',
   'gemini-3-pro',
+  'gemini-3-flash',
   'gemini-2.5-flash',
 ];
 
@@ -320,6 +322,58 @@ function saveResults(
   console.log(`\nResponses saved to: ${outputDir}`);
 }
 
+// Perform synthesis using Claude Opus with extended thinking
+async function performSynthesis(
+  prompt: string,
+  results: ModelResult[],
+  depth: 'brief' | 'executive' | 'full' = 'executive'
+): Promise<string> {
+  console.log('\n=== Running Synthesis with Claude Opus 4.5 ===\n');
+
+  const synthesisPrompt = generateSynthesisPrompt(prompt, results, depth);
+
+  try {
+    const result = await generateText({
+      model: anthropic('claude-opus-4-5-20251101'),
+      prompt: synthesisPrompt,
+      maxOutputTokens: 16000,
+      providerOptions: {
+        anthropic: {
+          thinking: {
+            type: 'enabled',
+            budgetTokens: 10000,
+          },
+        },
+      },
+    });
+
+    return result.text;
+  } catch (error) {
+    console.error('Synthesis failed:', error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+}
+
+// Append synthesis to the live markdown file
+function appendSynthesisToLiveFile(filePath: string, synthesis: string): void {
+  let content = readFileSync(filePath, 'utf-8');
+
+  // Insert synthesis section after the metadata section (after first ---)
+  // Find the position after "---\n\n" that follows Time:
+  const timeMatch = content.match(/\*\*Time:\*\* [^\n]+\n\n---\n\n/);
+  if (timeMatch && timeMatch.index !== undefined) {
+    const insertPos = timeMatch.index + timeMatch[0].length;
+    const synthesisSection = `# Synthesis\n\n${synthesis}\n\n---\n\n`;
+    content = content.slice(0, insertPos) + synthesisSection + content.slice(insertPos);
+  } else {
+    // Fallback: append at end
+    content += `\n\n---\n\n# Synthesis\n\n${synthesis}\n`;
+  }
+
+  writeFileSync(filePath, content);
+  console.log(`\nSynthesis added to: ${filePath}`);
+}
+
 // Print summary of results
 function printSummary(results: ModelResult[]): void {
   console.log('\n=== Results Summary ===\n');
@@ -354,6 +408,8 @@ async function runQuery(
     noSave?: boolean;
     liveFile?: string;
     image?: string;
+    synthesise?: boolean;
+    synthesisDepth?: string;
   }
 ): Promise<void> {
   const config = loadConfig();
@@ -415,6 +471,22 @@ async function runQuery(
 
   // Print summary
   printSummary(results);
+
+  // Run synthesis if requested
+  if (options.synthesise && options.liveFile) {
+    const successfulResults = results.filter(r => r.status === 'success');
+    if (successfulResults.length > 0) {
+      const depth = (options.synthesisDepth || 'executive') as 'brief' | 'executive' | 'full';
+      try {
+        const synthesis = await performSynthesis(prompt, results, depth);
+        appendSynthesisToLiveFile(options.liveFile, synthesis);
+      } catch (error) {
+        console.error('Synthesis failed, skipping...');
+      }
+    } else {
+      console.log('\nNo successful responses to synthesise.');
+    }
+  }
 }
 
 // CLI setup
@@ -434,6 +506,8 @@ program
   .option('-l, --live-file <path>', 'Markdown file to update live as responses arrive')
   .option('-i, --image <path>', 'Image file to include with the prompt (vision models only)')
   .option('--no-save', 'Do not save responses to disk')
+  .option('-s, --synthesise', 'Run automatic synthesis after queries complete')
+  .option('--synthesis-depth <level>', 'Synthesis depth: brief, executive, full', 'executive')
   .action(runQuery);
 
 program

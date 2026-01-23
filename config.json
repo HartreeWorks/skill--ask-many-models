@@ -2,7 +2,7 @@
   "presets": {
     "quick": {
       "description": "Fast responses from efficient models",
-      "models": ["gemini-2.5-flash", "grok-4"],
+      "models": ["gemini-3-flash", "gemini-2.5-flash", "grok-4"],
       "timeout_seconds": 60
     },
     "frontier": {
@@ -81,6 +81,13 @@
       "type": "api",
       "max_tokens": 16000
     },
+    "gemini-3-flash": {
+      "provider": "google",
+      "model_id": "gemini-3-flash-preview",
+      "display_name": "Gemini 3 Flash",
+      "type": "api",
+      "max_tokens": 16000
+    },
     "grok-4": {
       "provider": "xai",
       "model_id": "grok-4",
@@ -94,6 +101,20 @@
       "display_name": "Grok 4.1",
       "type": "api",
       "max_tokens": 16000
+    },
+    "o3-deep-research": {
+      "provider": "openai",
+      "model_id": "o3-deep-research-2025-06-26",
+      "display_name": "OpenAI Deep Research (o3)",
+      "type": "api",
+      "max_tokens": 64000
+    },
+    "o4-mini-deep-research": {
+      "provider": "openai",
+      "model_id": "o4-mini-deep-research-2025-06-26",
+      "display_name": "OpenAI Deep Research (o4-mini)",
+      "type": "api",
+      "max_tokens": 32000
     },
     "gpt-5.2-pro-browser": {
       "provider": "openai",
