@@ -1,6 +1,6 @@
 ---
 description: Query multiple AI models in parallel and synthesise responses
-allowed-tools: Bash, Read, Glob, AskUserQuestion, Edit, Write
+allowed-tools: Bash, Read, Write, AskUserQuestion
 arguments:
   - name: prompt
     description: The question or prompt to send to all models
@@ -11,93 +11,68 @@ arguments:
 
 Query multiple AI models with the given prompt and synthesise their responses.
 
+**Tip**: For faster execution without images, use `amm "prompt"` directly in terminal.
+
 ## Execution Steps
 
-### Step 0: Check for images
+### Step 1: Check for images and ask about model selection
 
-Check if there are any images in the recent conversation context (i.e., the user's message that triggered this command).
+First, check if there are any images in the conversation context.
 
-If an image is present:
-1. Save it to `/Users/ph/.claude/skills/ask-many-models/multi-model-responses/image-TIMESTAMP.png` (use actual timestamp)
-2. Note the path - you'll pass it to the query command later with `--image <path>`
+Then ask the user ONE question with these options:
 
-Vision-capable models (GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Gemini 2.5 Flash) will receive the image. Other models will receive just the text prompt with a note that an image was provided.
+- **Header**: "Mode"
+- **Question**: "How should I run this query?"
+- **Options**:
+  1. "Use defaults" - Use default models from user-defaults.json (fastest)
+  2. "Let me choose" - Show model selection dialog
+  3. "Quick preset" - Use the quick preset (gemini-3-flash, gemini-2.5-flash, grok-4)
 
-### Step 1: Read defaults and config
+If user selects "Let me choose", proceed to Step 2. Otherwise skip to Step 3.
 
-Read the user's default model selection:
+### Step 2: Model selection (only if requested)
+
+Read the config and defaults:
+- `/Users/ph/.claude/skills/ask-many-models/data/user-defaults.json`
+- `/Users/ph/.claude/skills/ask-many-models/config.json`
+
+Use AskUserQuestion with multiSelect. Mark default models with "(default)" in the label.
+
+### Step 3: Save image if present
+
+If an image is present in the conversation:
+1. Save it to `/Users/ph/.claude/skills/ask-many-models/multi-model-responses/image-TIMESTAMP.png`
+2. Note the path for the `--image` flag
+
+Vision-capable models: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Gemini 3 Flash, Gemini 2.5 Flash.
+
+### Step 4: Run the query
+
+Read defaults if not already read:
 ```
 /Users/ph/.claude/skills/ask-many-models/data/user-defaults.json
 ```
 
-Read the available models from config:
-```
-/Users/ph/.claude/skills/ask-many-models/config.json
-```
-
-### Step 2: Ask user which models to use
-
-Use AskUserQuestion with multiSelect to let the user choose models. The question should be structured as:
-
-- **Header**: "Models"
-- **Question**: "Which models should I query? (Enter to use defaults)"
-- **Options**: List all API models from config (exclude browser-only models)
-- For the default models from user-defaults.json, mark them as selected by default by putting "(default)" in the label
-
-The user's defaults are stored in `data/user-defaults.json` - these should be the first options listed.
-
-Example options structure:
-1. GPT-5.2 Thinking (default)
-2. Claude 4.5 Opus Thinking (default)
-3. Grok 4 (default)
-4. Gemini 3 Pro (default)
-5. GPT-5.2
-6. Claude 4.5 Opus
-7. Gemini 2.5 Flash
-8. Grok 4.1
-
-If user selects "Other", ask them to type model names comma-separated.
-
-### Step 3: Generate output file path
+Generate output path and run:
 
 ```bash
-echo "/Users/ph/.claude/skills/ask-many-models/multi-model-responses/$(date +%Y-%m-%d-%H%M)-query.md"
+cd /Users/ph/.claude/skills/ask-many-models && yarn query \
+  --models "<comma-separated-model-ids>" \
+  --live-file "/Users/ph/.claude/skills/ask-many-models/multi-model-responses/$(date +%Y-%m-%d-%H%M)-query.md" \
+  --synthesise \
+  [--image "<image-path>"] \
+  "$prompt"
 ```
 
-### Step 4: Run the query with selected models
+The `--synthesise` flag automatically runs Claude Opus 4.5 with extended thinking to synthesise responses and insert the synthesis into the markdown file.
 
-Convert the selected model display names back to model IDs and run:
+### Step 5: Confirm and open
 
-```bash
-cd /Users/ph/.claude/skills/ask-many-models && yarn query --models "<comma-separated-model-ids>" --live-file "<live-file-path>" [--image "<image-path>"] "$prompt"
-```
-
-If an image was saved in Step 0, include `--image "<image-path>"` in the command.
-
-### Step 5: Confirm and open the file
-
-After submitting the command:
 1. Confirm: "Query submitted to [model names]"
 2. Give the absolute path to the markdown file
 3. Open it: `open "<live-file-path>"`
 
-### Step 6: Synthesise after completion
-
-Once all responses are in, read the live file and provide a synthesis identifying:
-- **Consensus**: Points where multiple models agree (high confidence)
-- **Unique insights**: Valuable points only one model mentioned
-- **Disagreements**: Where models contradict, with analysis
-- **Overall assessment**: Brief quality/reliability note
-
-After printing the synthesis to the console, insert it into the markdown file immediately after the `---` line that follows the Time field (before the first model response). Use the Edit tool to insert a new section:
-
-```markdown
-# Synthesis
-
-[Your synthesis content here]
-
----
-```
+Synthesis is handled automatically by the script - no manual synthesis needed.
 
 ## Available Models
 
