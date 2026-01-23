@@ -2,7 +2,7 @@
   "presets": {
     "quick": {
       "description": "Fast responses from efficient models",
-      "models": ["gemini-3-flash", "gemini-2.5-flash", "grok-4"],
+      "models": ["gemini-3-flash", "grok-4"],
       "timeout_seconds": 60
     },
     "frontier": {
@@ -12,7 +12,7 @@
     },
     "comprehensive": {
       "description": "All available API models",
-      "models": ["gpt-5.2", "gemini-3-pro", "gemini-2.5-flash", "grok-4", "claude-4.5-opus"],
+      "models": ["gpt-5.2", "gemini-3-pro", "gemini-3-flash", "grok-4", "claude-4.5-opus"],
       "timeout_seconds": 300
     },
     "deep-research": {
@@ -73,13 +73,6 @@
       "display_name": "Gemini 3 Pro",
       "type": "api",
       "max_tokens": 32000
-    },
-    "gemini-2.5-flash": {
-      "provider": "google",
-      "model_id": "gemini-2.5-flash",
-      "display_name": "Gemini 2.5 Flash",
-      "type": "api",
-      "max_tokens": 16000
     },
     "gemini-3-flash": {
       "provider": "google",

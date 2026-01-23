@@ -63,7 +63,7 @@ Paste an image into your message along with your question to have vision-capable
 /amm "What's in this image?" [paste image]
 ```
 
-Vision-capable models: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Gemini 2.5 Flash
+Vision-capable models: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Gemini 3 Flash
 
 Models without vision support will receive just the text prompt with a note that an image was provided.
 
@@ -124,7 +124,7 @@ Alternatively, read the individual responses from the `individual/` subdirectory
 
 | Preset | Models | Use Case |
 |--------|--------|----------|
-| `quick` | Gemini 2.5 Flash, Grok 4 | Fast responses (~5s) |
+| `quick` | Gemini 3 Flash, Grok 4 | Fast responses (~5s) |
 | `frontier` | GPT-5.2, Gemini 3 Pro, Grok 4 | Best reasoning (~30s) |
 | `comprehensive` | All API models | Thorough coverage (~60s) |
 | `deep-research` | ChatGPT Deep Research | In-depth research (browser, 30+ min) |
@@ -243,7 +243,6 @@ multi-model-responses/
 | gpt-5.2-pro | GPT-5.2 Pro | OpenAI | ✓ |
 | claude-4.5-opus | Claude 4.5 Opus | Anthropic | ✓ |
 | claude-4-sonnet | Claude 4 Sonnet | Anthropic | ✓ |
-| gemini-2.5-flash | Gemini 2.5 Flash | Google | ✓ |
 | grok-4.1 | Grok 4.1 | xAI | |
 
 ## Notifications

@@ -76,7 +76,6 @@ const VISION_MODELS = [
   'claude-4-sonnet',
   'gemini-3-pro',
   'gemini-3-flash',
-  'gemini-2.5-flash',
 ];
 
 // Query a single model

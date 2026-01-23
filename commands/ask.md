@@ -44,7 +44,7 @@ If an image is present in the conversation:
 1. Save it to `/Users/ph/.claude/skills/ask-many-models/multi-model-responses/image-TIMESTAMP.png`
 2. Note the path for the `--image` flag
 
-Vision-capable models: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Gemini 3 Flash, Gemini 2.5 Flash.
+Vision-capable models: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Gemini 3 Flash.
 
 ### Step 4: Run the query
 
@@ -85,5 +85,4 @@ Synthesis is handled automatically by the script - no manual synthesis needed.
 | gemini-3-flash | Gemini 3 Flash | Google |
 | gpt-5.2 | GPT-5.2 | OpenAI |
 | claude-4.5-opus | Claude 4.5 Opus | Anthropic |
-| gemini-2.5-flash | Gemini 2.5 Flash | Google |
 | grok-4.1 | Grok 4.1 | xAI |

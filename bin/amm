@@ -3,7 +3,7 @@
 # amm - Ask Many Models CLI
 #
 # A fast CLI wrapper for querying multiple AI models in parallel.
-# Uses gum for interactive model selection with pre-checked defaults.
+# Uses gum for interactive model selection with presets and individual models.
 #
 # Usage:
 #   amm "What is the meaning of life?"
@@ -60,48 +60,72 @@ PROMPT="$1"
 
 # Read default models from user-defaults.json
 DEFAULT_MODELS=$(jq -r '.default_models[]' "$DEFAULTS_FILE")
+DEFAULT_MODELS_CSV=$(echo "$DEFAULT_MODELS" | tr '\n' ',' | sed 's/,$//')
+
+# Get preset info
+QUICK_MODELS=$(jq -r '.presets.quick.models | join(",")' "$CONFIG_FILE")
+FRONTIER_MODELS=$(jq -r '.presets.frontier.models | join(",")' "$CONFIG_FILE")
+COMPREHENSIVE_MODELS=$(jq -r '.presets.comprehensive.models | join(",")' "$CONFIG_FILE")
 
 # Read all available API models from config.json (exclude browser models)
 ALL_MODELS=$(jq -r '.models | to_entries | map(select(.value.type == "api")) | .[].key' "$CONFIG_FILE")
 
-# Build the gum choose options
-# Default models will be pre-selected
 if [[ "$SKIP_SELECT" == "true" ]]; then
-    SELECTED_MODELS="$DEFAULT_MODELS"
+    MODELS_CSV="$DEFAULT_MODELS_CSV"
 else
-    # Build options array with defaults marked as selected
-    OPTIONS=()
-    SELECTED=()
-
-    for model in $ALL_MODELS; do
-        OPTIONS+=("$model")
-        # Check if this model is in defaults
-        if echo "$DEFAULT_MODELS" | grep -q "^${model}$"; then
-            SELECTED+=("$model")
-        fi
-    done
-
-    # Build gum command with --selected for defaults
-    SELECTED_ARGS=""
-    for sel in "${SELECTED[@]}"; do
-        SELECTED_ARGS="$SELECTED_ARGS --selected=\"$sel\""
-    done
-
-    echo "Select models to query:"
+    # Build options: presets first, then separator, then individual models
+    echo "Select mode or models:"
     echo "  ↑/↓ navigate  •  space toggle  •  enter confirm"
     echo ""
 
-    # Use eval to handle the dynamic --selected args
-    SELECTED_MODELS=$(eval "gum choose --no-limit --height=15 --cursor-prefix='[ ] ' --selected-prefix='[✓] ' --unselected-prefix='[ ] ' $SELECTED_ARGS ${OPTIONS[*]}" || true)
+    # Create options array with presets first
+    OPTIONS=(
+        "⚡ Defaults ($DEFAULT_MODELS_CSV)"
+        "🚀 Quick ($QUICK_MODELS)"
+        "🎯 Frontier ($FRONTIER_MODELS)"
+        "📊 Comprehensive ($COMPREHENSIVE_MODELS)"
+        "───────────────────"
+    )
 
-    if [[ -z "$SELECTED_MODELS" ]]; then
-        echo "No models selected, using defaults."
-        SELECTED_MODELS="$DEFAULT_MODELS"
+    # Add individual models
+    for model in $ALL_MODELS; do
+        OPTIONS+=("$model")
+    done
+
+    # Run gum choose (single select for presets, but allow drilling into individual)
+    SELECTION=$(gum choose --height=18 "${OPTIONS[@]}" || true)
+
+    if [[ -z "$SELECTION" ]]; then
+        echo "No selection made, using defaults."
+        MODELS_CSV="$DEFAULT_MODELS_CSV"
+    elif [[ "$SELECTION" == "⚡ Defaults"* ]]; then
+        MODELS_CSV="$DEFAULT_MODELS_CSV"
+    elif [[ "$SELECTION" == "🚀 Quick"* ]]; then
+        MODELS_CSV="$QUICK_MODELS"
+    elif [[ "$SELECTION" == "🎯 Frontier"* ]]; then
+        MODELS_CSV="$FRONTIER_MODELS"
+    elif [[ "$SELECTION" == "📊 Comprehensive"* ]]; then
+        MODELS_CSV="$COMPREHENSIVE_MODELS"
+    elif [[ "$SELECTION" == "───"* ]]; then
+        echo "That's a separator. Using defaults."
+        MODELS_CSV="$DEFAULT_MODELS_CSV"
+    else
+        # User selected an individual model - let them pick more
+        echo ""
+        echo "Select additional models (or just press enter):"
+
+        # Build options with the first selection pre-selected
+        SELECTED_ARGS="--selected=\"$SELECTION\""
+
+        MORE_SELECTIONS=$(eval "gum choose --no-limit --height=15 $SELECTED_ARGS $ALL_MODELS" || true)
+
+        if [[ -z "$MORE_SELECTIONS" ]]; then
+            MODELS_CSV="$SELECTION"
+        else
+            MODELS_CSV=$(echo "$MORE_SELECTIONS" | tr '\n' ',' | sed 's/,$//')
+        fi
     fi
 fi
-
-# Convert newline-separated to comma-separated
-MODELS_CSV=$(echo "$SELECTED_MODELS" | tr '\n' ',' | sed 's/,$//')
 
 # Generate output file path
 TIMESTAMP=$(date +%Y-%m-%d-%H%M)
