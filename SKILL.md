@@ -1,7 +1,6 @@
 ---
-name: Ask Many Models
+name: ask-many-models
 description: This skill should be used when the user asks to "ask many models", "query multiple AI models", "get opinions from different AIs", "compare AI responses", "ask GPT and Gemini", "ask several models", or mentions wanting to send the same prompt to multiple AI models and synthesise the results.
-version: 0.1.0
 ---
 
 # Ask Many Models
