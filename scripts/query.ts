@@ -827,14 +827,14 @@ async function runQuery(
   const deepResearchPromises: Promise<void>[] = [];
 
   // Track deep research progress for console output
-  const deepResearchStatus = new Map<string, { status: string; elapsedMs: number; lastUpdate: Date }>();
+  const deepResearchStatus = new Map<string, { status: string; startTime: Date; lastUpdate: Date }>();
 
   if (hasDeepResearch) {
     console.log(`\n\x1b[1m\x1b[33m🔬 Starting ${deepResearchModels.length} deep research model(s) in background...\x1b[0m`);
 
     for (const modelName of deepResearchModels) {
       const modelConfig = config.models[modelName];
-      deepResearchStatus.set(modelName, { status: 'starting', elapsedMs: 0, lastUpdate: new Date() });
+      deepResearchStatus.set(modelName, { status: 'starting', startTime: new Date(), lastUpdate: new Date() });
 
       const promise = (async () => {
         const result = await queryDeepResearch({
@@ -847,12 +847,15 @@ async function runQuery(
             if (options.liveFile) {
               updateDeepResearchProgress(options.liveFile, progress);
             }
-            // Track progress for console output
-            deepResearchStatus.set(modelName, {
-              status: progress.status,
-              elapsedMs: progress.elapsedMs,
-              lastUpdate: new Date(),
-            });
+            // Track progress for console output (keep startTime, only update status and lastUpdate)
+            const existing = deepResearchStatus.get(modelName);
+            if (existing) {
+              deepResearchStatus.set(modelName, {
+                status: progress.status,
+                startTime: existing.startTime,
+                lastUpdate: new Date(),
+              });
+            }
           },
         });
 
@@ -970,7 +973,7 @@ async function runQuery(
     console.log('\n\x1b[1m\x1b[33m⏳ Waiting for deep research to complete (this may take 20-40 minutes)...\x1b[0m');
     console.log('\x1b[2m   Quick model results are already available in the live file.\x1b[0m\n');
 
-    // Progress display (updates every 10s since deep research takes 20-40 min)
+    // Progress display (updates every 1s for smooth timer, API polling happens every 10s internally)
     const isTTY = process.stdout.isTTY;
     let lastPrintedLines = 0;
 
@@ -980,7 +983,8 @@ async function runQuery(
       // Build status line for each model
       const statusLines: string[] = [];
       for (const [model, info] of deepResearchStatus) {
-        const elapsedSec = Math.floor(info.elapsedMs / 1000);
+        // Calculate elapsed time from startTime (real-time)
+        const elapsedSec = Math.floor((now.getTime() - info.startTime.getTime()) / 1000);
         const mins = Math.floor(elapsedSec / 60);
         const secs = elapsedSec % 60;
         const elapsedStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
@@ -988,8 +992,14 @@ async function runQuery(
         const statusIcon = info.status === 'completed' ? '✓' :
                           info.status === 'failed' ? '✗' : '◐';
 
-        const lastCheckAgo = Math.floor((now.getTime() - info.lastUpdate.getTime()) / 1000);
-        const checkStr = lastCheckAgo < 5 ? '' : ` (checked ${lastCheckAgo}s ago)`;
+        // Only show "checked Xs ago" for in-progress items
+        let checkStr = '';
+        if (info.status !== 'completed' && info.status !== 'failed') {
+          const lastCheckAgo = Math.floor((now.getTime() - info.lastUpdate.getTime()) / 1000);
+          if (lastCheckAgo >= 5) {
+            checkStr = ` (checked ${lastCheckAgo}s ago)`;
+          }
+        }
 
         statusLines.push(`  ${statusIcon} ${model}: ${info.status} (${elapsedStr})${checkStr}`);
       }
@@ -1006,9 +1016,9 @@ async function runQuery(
     // Print initial status
     printProgress();
 
-    // Update every 10s - deep research takes 20-40 min so frequent updates aren't useful
-    const updateInterval = 10000;
-    const progressInterval = setInterval(printProgress, updateInterval);
+    // Update display every 1s for smooth elapsed time counter
+    // (API polling happens every 10s internally, but display updates every second)
+    const progressInterval = setInterval(printProgress, 1000);
 
     await Promise.all(deepResearchPromises);
     clearInterval(progressInterval);
