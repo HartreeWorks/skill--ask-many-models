@@ -12,9 +12,10 @@ import 'dotenv/config';
 import { program } from 'commander';
 import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
-import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync, appendFileSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname, basename, extname } from 'path';
 import { fileURLToPath } from 'url';
+import { EventEmitter } from 'events';
 import {
   createModel,
   getPresetModels,
@@ -66,6 +67,158 @@ interface ModelResult {
   tokensUsed?: number;
 }
 
+// Progress tracking for models
+type ModelStatus = 'pending' | 'querying' | 'success' | 'error' | 'timeout';
+
+interface ModelProgress {
+  name: string;
+  displayName: string;
+  status: ModelStatus;
+  isSlow: boolean;
+  startTime?: number;
+  endTime?: number;
+  error?: string;
+}
+
+class ProgressTracker extends EventEmitter {
+  private models: Map<string, ModelProgress> = new Map();
+  private startTime: number;
+  private renderInterval?: ReturnType<typeof setInterval>;
+
+  constructor(modelNames: string[], config: Config) {
+    super();
+    this.startTime = Date.now();
+
+    for (const name of modelNames) {
+      const modelConfig = config.models[name];
+      this.models.set(name, {
+        name,
+        displayName: modelConfig?.display_name || name,
+        status: 'pending',
+        isSlow: modelConfig?.slow || false,
+      });
+    }
+  }
+
+  start(): void {
+    this.renderInterval = setInterval(() => this.render(), 500);
+    this.render();
+  }
+
+  stop(): void {
+    if (this.renderInterval) {
+      clearInterval(this.renderInterval);
+      this.renderInterval = undefined;
+    }
+    // Clear the progress display and print final state
+    process.stdout.write('\x1b[2K\r'); // Clear current line
+  }
+
+  setStatus(modelName: string, status: ModelStatus, error?: string): void {
+    const model = this.models.get(modelName);
+    if (model) {
+      if (status === 'querying' && !model.startTime) {
+        model.startTime = Date.now();
+      }
+      if (status === 'success' || status === 'error' || status === 'timeout') {
+        model.endTime = Date.now();
+      }
+      model.status = status;
+      model.error = error;
+      this.emit('statusChange', modelName, status);
+    }
+  }
+
+  getElapsedTime(): string {
+    const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+  }
+
+  private getStatusIcon(status: ModelStatus): string {
+    switch (status) {
+      case 'pending': return '○';
+      case 'querying': return '◐';
+      case 'success': return '✓';
+      case 'error': return '✗';
+      case 'timeout': return '⏱';
+    }
+  }
+
+  private getStatusColor(status: ModelStatus): string {
+    switch (status) {
+      case 'pending': return '\x1b[90m';   // gray
+      case 'querying': return '\x1b[33m';  // yellow
+      case 'success': return '\x1b[32m';   // green
+      case 'error': return '\x1b[31m';     // red
+      case 'timeout': return '\x1b[31m';   // red
+    }
+  }
+
+  render(): void {
+    const reset = '\x1b[0m';
+    const dim = '\x1b[2m';
+
+    // Build status line
+    const parts: string[] = [];
+    const fastModels = [...this.models.values()].filter(m => !m.isSlow);
+    const slowModels = [...this.models.values()].filter(m => m.isSlow);
+
+    for (const model of fastModels) {
+      const icon = this.getStatusIcon(model.status);
+      const color = this.getStatusColor(model.status);
+      parts.push(`${color}${icon}${reset} ${model.displayName}`);
+    }
+
+    if (slowModels.length > 0) {
+      parts.push(`${dim}|${reset}`);
+      for (const model of slowModels) {
+        const icon = this.getStatusIcon(model.status);
+        const color = this.getStatusColor(model.status);
+        const slowLabel = model.status === 'querying' ? ' (slow)' : '';
+        parts.push(`${color}${icon}${reset} ${model.displayName}${dim}${slowLabel}${reset}`);
+      }
+    }
+
+    const elapsed = `${dim}[${this.getElapsedTime()}]${reset}`;
+    const line = `${parts.join('  ')}  ${elapsed}`;
+
+    // Move to start of line and clear, then print
+    process.stdout.write(`\x1b[2K\r${line}`);
+  }
+
+  getCompletedCount(): { fast: number; slow: number; total: number } {
+    let fast = 0, slow = 0;
+    for (const model of this.models.values()) {
+      if (model.status === 'success' || model.status === 'error' || model.status === 'timeout') {
+        if (model.isSlow) slow++;
+        else fast++;
+      }
+    }
+    return { fast, slow, total: fast + slow };
+  }
+
+  getFastModelCount(): number {
+    return [...this.models.values()].filter(m => !m.isSlow).length;
+  }
+
+  getSlowModelCount(): number {
+    return [...this.models.values()].filter(m => m.isSlow).length;
+  }
+
+  allFastComplete(): boolean {
+    return [...this.models.values()]
+      .filter(m => !m.isSlow)
+      .every(m => m.status === 'success' || m.status === 'error' || m.status === 'timeout');
+  }
+
+  allComplete(): boolean {
+    return [...this.models.values()]
+      .every(m => m.status === 'success' || m.status === 'error' || m.status === 'timeout');
+  }
+}
+
 // Models known to support vision
 const VISION_MODELS = [
   'gpt-5.2-thinking',
@@ -73,7 +226,7 @@ const VISION_MODELS = [
   'gpt-5.2-pro',
   'claude-4.5-opus-thinking',
   'claude-4.5-opus',
-  'claude-4-sonnet',
+  'claude-4.5-sonnet',
   'gemini-3-pro',
   'gemini-3-flash',
 ];
@@ -230,7 +383,115 @@ function updateLiveFile(filePath: string, modelName: string, result: ModelResult
   writeFileSync(filePath, content);
 }
 
-// Query multiple models in parallel with live file updates
+// Query multiple models in parallel with live file updates and progress tracking
+interface QueryModelsOptions {
+  modelNames: string[];
+  prompt: string;
+  config: Config;
+  defaultTimeoutSeconds: number;
+  liveFilePath?: string;
+  imagePath?: string;
+  onFastModelsComplete?: (results: ModelResult[]) => Promise<void>;
+  onAllModelsComplete?: (results: ModelResult[]) => Promise<void>;
+}
+
+async function queryModelsWithProgress(options: QueryModelsOptions): Promise<ModelResult[]> {
+  const {
+    modelNames,
+    prompt,
+    config,
+    defaultTimeoutSeconds,
+    liveFilePath,
+    imagePath,
+    onFastModelsComplete,
+    onAllModelsComplete,
+  } = options;
+
+  const results: Map<string, ModelResult> = new Map();
+  const tracker = new ProgressTracker(modelNames, config);
+
+  // Print header info
+  console.log(`\nQuerying ${modelNames.length} models...`);
+  if (imagePath) {
+    console.log(`Image: ${imagePath}`);
+    console.log(`Vision models: ${modelNames.filter(m => VISION_MODELS.includes(m)).join(', ') || 'none'}`);
+  }
+  if (liveFilePath) {
+    console.log(`Live file: ${liveFilePath}`);
+  }
+  console.log('');
+
+  // Create live file if specified
+  if (liveFilePath) {
+    createLiveFile(liveFilePath, prompt, modelNames, imagePath);
+  }
+
+  // Start progress display
+  tracker.start();
+
+  let fastModelsCallbackFired = false;
+
+  // Create individual promises for each model
+  const modelPromises = modelNames.map(async (modelName) => {
+    const modelConfig = config.models[modelName];
+    const isSlow = modelConfig?.slow || false;
+    const timeoutSeconds = modelConfig?.timeout_seconds || defaultTimeoutSeconds;
+    const timeoutMs = timeoutSeconds * 1000;
+
+    tracker.setStatus(modelName, 'querying');
+
+    const result = await queryModel(modelName, prompt, config, timeoutMs, imagePath);
+    results.set(modelName, result);
+
+    // Update status
+    tracker.setStatus(modelName, result.status, result.error);
+
+    // Update live file immediately
+    if (liveFilePath) {
+      updateLiveFile(liveFilePath, modelName, result);
+    }
+
+    // Check if all fast models are complete
+    if (!fastModelsCallbackFired && tracker.allFastComplete() && onFastModelsComplete) {
+      fastModelsCallbackFired = true;
+      tracker.stop();
+      console.log('\n');
+
+      const fastResults = modelNames
+        .filter(name => !config.models[name]?.slow)
+        .map(name => results.get(name)!)
+        .filter(Boolean);
+
+      await onFastModelsComplete(fastResults);
+
+      // Resume progress if there are still slow models running
+      if (!tracker.allComplete()) {
+        console.log('\nWaiting for slow models...\n');
+        tracker.start();
+      }
+    }
+
+    return result;
+  });
+
+  // Wait for all models to complete
+  await Promise.all(modelPromises);
+
+  tracker.stop();
+  console.log('\n');
+
+  // Sort results to match original model order
+  const sortedResults = modelNames.map(name => results.get(name)!);
+
+  // Call completion callback if there were slow models
+  if (tracker.getSlowModelCount() > 0 && onAllModelsComplete) {
+    await onAllModelsComplete(sortedResults);
+  }
+
+  return sortedResults;
+}
+
+// Legacy function for backward compatibility
 async function queryModels(
   modelNames: string[],
   prompt: string,
@@ -239,44 +500,14 @@ async function queryModels(
   liveFilePath?: string,
   imagePath?: string
 ): Promise<ModelResult[]> {
-  const timeoutMs = timeoutSeconds * 1000;
-
-  console.log(`\nQuerying ${modelNames.length} models in parallel...`);
-  console.log(`Models: ${modelNames.join(', ')}`);
-  if (imagePath) {
-    console.log(`Image: ${imagePath}`);
-    console.log(`Vision models: ${modelNames.filter(m => VISION_MODELS.includes(m)).join(', ') || 'none'}`);
-  }
-  console.log(`Timeout: ${timeoutSeconds}s\n`);
-
-  // Create live file if specified
-  if (liveFilePath) {
-    createLiveFile(liveFilePath, prompt, modelNames, imagePath);
-    console.log(`Live file: ${liveFilePath}\n`);
-  }
-
-  // Query all models and update live file as each completes
-  const results: ModelResult[] = [];
-  const promises = modelNames.map(async (model) => {
-    const result = await queryModel(model, prompt, config, timeoutMs, imagePath);
-    results.push(result);
-
-    // Update live file immediately when this model completes
-    if (liveFilePath) {
-      updateLiveFile(liveFilePath, model, result);
-    }
-
-    return result;
+  return queryModelsWithProgress({
+    modelNames,
+    prompt,
+    config,
+    defaultTimeoutSeconds: timeoutSeconds,
+    liveFilePath,
+    imagePath,
   });
-
-  await Promise.all(promises);
-
-  // Sort results to match original model order
-  const sortedResults = modelNames.map(
-    name => results.find(r => r.model === name)!
-  );
-
-  return sortedResults;
 }
 
 // Save results to output directory
@@ -353,24 +584,43 @@ async function performSynthesis(
   }
 }
 
-// Append synthesis to the live markdown file
-function appendSynthesisToLiveFile(filePath: string, synthesis: string): void {
+// Update or insert synthesis in the live markdown file
+function updateSynthesisInLiveFile(filePath: string, synthesis: string, isPreliminary: boolean = false): void {
   let content = readFileSync(filePath, 'utf-8');
 
-  // Insert synthesis section after the metadata section (after first ---)
-  // Find the position after "---\n\n" that follows Time:
-  const timeMatch = content.match(/\*\*Time:\*\* [^\n]+\n\n---\n\n/);
-  if (timeMatch && timeMatch.index !== undefined) {
-    const insertPos = timeMatch.index + timeMatch[0].length;
-    const synthesisSection = `# Synthesis\n\n${synthesis}\n\n---\n\n`;
-    content = content.slice(0, insertPos) + synthesisSection + content.slice(insertPos);
+  const header = isPreliminary
+    ? '# Synthesis (preliminary—waiting for slow models...)'
+    : '# Synthesis';
+
+  const synthesisSection = `${header}\n\n${synthesis}\n\n---\n\n`;
+
+  // Check if synthesis section already exists
+  const existingSynthesisMatch = content.match(/# Synthesis[^\n]*\n\n[\s\S]*?\n\n---\n\n/);
+
+  if (existingSynthesisMatch && existingSynthesisMatch.index !== undefined) {
+    // Replace existing synthesis
+    content = content.slice(0, existingSynthesisMatch.index) +
+      synthesisSection +
+      content.slice(existingSynthesisMatch.index + existingSynthesisMatch[0].length);
   } else {
-    // Fallback: append at end
-    content += `\n\n---\n\n# Synthesis\n\n${synthesis}\n`;
+    // Insert after metadata section
+    const timeMatch = content.match(/\*\*Time:\*\* [^\n]+\n\n---\n\n/);
+    if (timeMatch && timeMatch.index !== undefined) {
+      const insertPos = timeMatch.index + timeMatch[0].length;
+      content = content.slice(0, insertPos) + synthesisSection + content.slice(insertPos);
+    } else {
+      // Fallback: append at end
+      content += `\n\n---\n\n${synthesisSection}`;
+    }
   }
 
   writeFileSync(filePath, content);
-  console.log(`\nSynthesis added to: ${filePath}`);
+  console.log(`Synthesis ${existingSynthesisMatch ? 'updated' : 'added'}: ${filePath}`);
+}
+
+// Legacy function for backward compatibility
+function appendSynthesisToLiveFile(filePath: string, synthesis: string): void {
+  updateSynthesisInLiveFile(filePath, synthesis, false);
 }
 
 // Print summary of results
@@ -459,26 +709,81 @@ async function runQuery(
     process.exit(1);
   }
 
-  // Run queries
-  const results = await queryModels(modelNames, prompt, config, timeoutSeconds, options.liveFile, options.image);
+  // Check if there are any slow models
+  const hasSlowModels = modelNames.some(name => config.models[name]?.slow);
+  const depth = (options.synthesisDepth || 'executive') as 'brief' | 'executive' | 'full';
+
+  // Track all results for final save
+  let allResults: ModelResult[] = [];
+
+  // Run queries with async callbacks for synthesis (only when there are slow models)
+  // When all models are fast, we handle synthesis after the query completes
+  const results = await queryModelsWithProgress({
+    modelNames,
+    prompt,
+    config,
+    defaultTimeoutSeconds: timeoutSeconds,
+    liveFilePath: options.liveFile,
+    imagePath: options.image,
+
+    // Callback when fast models complete - only used when there are slow models
+    // This provides a preliminary synthesis while waiting for slow models
+    onFastModelsComplete: hasSlowModels ? async (fastResults) => {
+      if (!options.synthesise || !options.liveFile) return;
+
+      const successfulResults = fastResults.filter(r => r.status === 'success');
+      if (successfulResults.length === 0) {
+        console.log('No successful fast model responses to synthesise.');
+        return;
+      }
+
+      console.log(`\n=== Synthesising ${successfulResults.length} fast model responses ===\n`);
+      try {
+        const synthesis = await performSynthesis(prompt, fastResults, depth);
+        updateSynthesisInLiveFile(options.liveFile, synthesis, true);
+      } catch (error) {
+        console.error('Preliminary synthesis failed:', error instanceof Error ? error.message : String(error));
+      }
+    } : undefined,
+
+    // Callback when all models (including slow) complete - only used when there are slow models
+    onAllModelsComplete: hasSlowModels ? async (allResultsFromQuery) => {
+      if (!options.synthesise || !options.liveFile) return;
+
+      const successfulResults = allResultsFromQuery.filter(r => r.status === 'success');
+      if (successfulResults.length === 0) {
+        console.log('No successful responses to synthesise.');
+        return;
+      }
+
+      console.log(`\n=== Final synthesis with all ${successfulResults.length} responses ===\n`);
+      try {
+        const synthesis = await performSynthesis(prompt, allResultsFromQuery, depth);
+        updateSynthesisInLiveFile(options.liveFile, synthesis, false);
+      } catch (error) {
+        console.error('Final synthesis failed:', error instanceof Error ? error.message : String(error));
+      }
+    } : undefined,
+  });
+
+  allResults = results;
 
   // Save results
   if (!options.noSave) {
     const outputDir = options.output || generateOutputDir(prompt);
-    saveResults(outputDir, prompt, results);
+    saveResults(outputDir, prompt, allResults);
   }
 
   // Print summary
-  printSummary(results);
+  printSummary(allResults);
 
-  // Run synthesis if requested
-  if (options.synthesise && options.liveFile) {
-    const successfulResults = results.filter(r => r.status === 'success');
+  // Run synthesis if not already done via callbacks (no slow models case)
+  if (options.synthesise && options.liveFile && !hasSlowModels) {
+    const successfulResults = allResults.filter(r => r.status === 'success');
     if (successfulResults.length > 0) {
-      const depth = (options.synthesisDepth || 'executive') as 'brief' | 'executive' | 'full';
       try {
-        const synthesis = await performSynthesis(prompt, results, depth);
-        appendSynthesisToLiveFile(options.liveFile, synthesis);
+        const synthesis = await performSynthesis(prompt, allResults, depth);
+        updateSynthesisInLiveFile(options.liveFile, synthesis, false);
       } catch (error) {
         console.error('Synthesis failed, skipping...');
       }
