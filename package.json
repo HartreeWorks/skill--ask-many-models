@@ -1,6 +1,7 @@
 {
   "name": "ask-many-models",
   "version": "0.1.0",
+  "private": true,
   "description": "Query multiple AI models in parallel and synthesise responses",
   "type": "module",
   "scripts": {
