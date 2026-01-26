@@ -351,10 +351,52 @@ function normaliseHeadings(text: string): string {
 }
 
 // Create initial live markdown file with model headings
-function createLiveFile(filePath: string, prompt: string, modelNames: string[], imagePath?: string): void {
+// Count words in a string
+function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+}
+
+// Truncate text to approximately N words
+function truncateToWords(text: string, maxWords: number): string {
+  const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+  if (words.length <= maxWords) return text;
+  return words.slice(0, maxWords).join(' ') + '...';
+}
+
+function createLiveFile(
+  filePath: string,
+  prompt: string,
+  modelNames: string[],
+  imagePath?: string,
+  contextPaths?: string[]
+): void {
   const now = new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris' });
+  const outputDir = dirname(filePath);
   let content = `# Multi-Model Query\n\n`;
-  content += `**Prompt:** ${prompt}\n\n`;
+
+  // Handle prompt - truncate and link if >500 words
+  const wordCount = countWords(prompt);
+  if (wordCount > 500) {
+    // Save full prompt to prompt.md
+    const promptFilePath = join(outputDir, 'prompt.md');
+    writeFileSync(promptFilePath, prompt);
+
+    const truncated = truncateToWords(prompt, 50);
+    content += `**Prompt:** ${truncated}\n[Full prompt](./prompt.md)\n\n`;
+  } else {
+    content += `**Prompt:** ${prompt}\n\n`;
+  }
+
+  // Handle context - always link to absolute paths
+  if (contextPaths && contextPaths.length > 0) {
+    content += `**Context:**\n`;
+    for (const ctxPath of contextPaths) {
+      const fileName = basename(ctxPath);
+      content += `- [${fileName}](${ctxPath})\n`;
+    }
+    content += `\n`;
+  }
+
   if (imagePath) {
     const imageFilename = basename(imagePath);
     content += `**Image:** ${imageFilename}\n\n`;
@@ -403,6 +445,7 @@ interface QueryModelsOptions {
   defaultTimeoutSeconds: number;
   liveFilePath?: string;
   imagePath?: string;
+  contextPaths?: string[];
   onFastModelsComplete?: (results: ModelResult[]) => Promise<void>;
   onAllModelsComplete?: (results: ModelResult[]) => Promise<void>;
 }
@@ -415,6 +458,7 @@ async function queryModelsWithProgress(options: QueryModelsOptions): Promise<Mod
     defaultTimeoutSeconds,
     liveFilePath,
     imagePath,
+    contextPaths,
     onFastModelsComplete,
     onAllModelsComplete,
   } = options;
@@ -435,7 +479,7 @@ async function queryModelsWithProgress(options: QueryModelsOptions): Promise<Mod
 
   // Create live file if specified
   if (liveFilePath) {
-    createLiveFile(liveFilePath, prompt, modelNames, imagePath);
+    createLiveFile(liveFilePath, prompt, modelNames, imagePath, contextPaths);
   }
 
   // Start progress display
@@ -819,9 +863,10 @@ async function runQuery(
     : prompt;
 
   // Create live file early if we have deep research models (to show progress)
+  const contextPaths = options.context ? [options.context] : undefined;
   if (options.liveFile && hasDeepResearch) {
     const allModelsToShow = [...quickModels, ...deepResearchModels];
-    createLiveFile(options.liveFile, prompt, allModelsToShow, options.image);
+    createLiveFile(options.liveFile, prompt, allModelsToShow, options.image, contextPaths);
   }
 
   // Start deep research queries in background (they run for 20-40 min)
@@ -888,6 +933,7 @@ async function runQuery(
       defaultTimeoutSeconds: timeoutSeconds,
       liveFilePath: hasDeepResearch ? undefined : options.liveFile, // Only create if no deep research
       imagePath: options.image,
+      contextPaths,
 
       // Callback when fast models complete
       onFastModelsComplete: hasSlowModels ? async (fastResults) => {

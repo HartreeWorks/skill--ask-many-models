@@ -6,6 +6,8 @@ A Claude Code skill for querying multiple AI models (GPT, Claude, Gemini, Grok) 
 
 ![Ask Many Models response](amm-skill-answer.jpeg)
 
+![Ask Many Models response continued](amm-skill-answer-2.jpeg)
+
 ## Usage
 
 **Within Claude Code:** Just say "Ask many models: [your question]" and Claude will handle the rest.
