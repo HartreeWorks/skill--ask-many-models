@@ -12,6 +12,7 @@ import 'dotenv/config';
 import { program } from 'commander';
 import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
+import { google } from '@ai-sdk/google';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname, basename, extname } from 'path';
 import { fileURLToPath } from 'url';
@@ -552,35 +553,53 @@ function saveResults(
   console.log(`\nResponses saved to: ${outputDir}`);
 }
 
-// Perform synthesis using Claude Opus with extended thinking
+// Perform synthesis using either Gemini Flash (fast) or Claude Opus (thorough)
 async function performSynthesis(
   prompt: string,
   results: ModelResult[],
-  depth: 'brief' | 'executive' | 'full' = 'executive'
+  depth: 'brief' | 'executive' | 'full' = 'executive',
+  useFastModel: boolean = false
 ): Promise<string> {
-  console.log('\n=== Running Synthesis with Claude Opus 4.5 ===\n');
-
   const synthesisPrompt = generateSynthesisPrompt(prompt, results, depth);
 
-  try {
-    const result = await generateText({
-      model: anthropic('claude-opus-4-5-20251101'),
-      prompt: synthesisPrompt,
-      maxOutputTokens: 16000,
-      providerOptions: {
-        anthropic: {
-          thinking: {
-            type: 'enabled',
-            budgetTokens: 10000,
+  if (useFastModel) {
+    console.log('\n=== Running Synthesis with Gemini 3 Flash ===\n');
+
+    try {
+      const result = await generateText({
+        model: google('gemini-3-flash-preview'),
+        prompt: synthesisPrompt,
+        maxOutputTokens: 8000,
+      });
+
+      return result.text;
+    } catch (error) {
+      console.error('Synthesis failed:', error instanceof Error ? error.message : String(error));
+      throw error;
+    }
+  } else {
+    console.log('\n=== Running Synthesis with Claude Opus 4.5 ===\n');
+
+    try {
+      const result = await generateText({
+        model: anthropic('claude-opus-4-5-20251101'),
+        prompt: synthesisPrompt,
+        maxOutputTokens: 16000,
+        providerOptions: {
+          anthropic: {
+            thinking: {
+              type: 'enabled',
+              budgetTokens: 10000,
+            },
           },
         },
-      },
-    });
+      });
 
-    return result.text;
-  } catch (error) {
-    console.error('Synthesis failed:', error instanceof Error ? error.message : String(error));
-    throw error;
+      return result.text;
+    } catch (error) {
+      console.error('Synthesis failed:', error instanceof Error ? error.message : String(error));
+      throw error;
+    }
   }
 }
 
@@ -778,11 +797,12 @@ async function runQuery(
   printSummary(allResults);
 
   // Run synthesis if not already done via callbacks (no slow models case)
+  // Use fast model (Gemini Flash) for quick queries
   if (options.synthesise && options.liveFile && !hasSlowModels) {
     const successfulResults = allResults.filter(r => r.status === 'success');
     if (successfulResults.length > 0) {
       try {
-        const synthesis = await performSynthesis(prompt, allResults, depth);
+        const synthesis = await performSynthesis(prompt, allResults, depth, true);
         updateSynthesisInLiveFile(options.liveFile, synthesis, false);
       } catch (error) {
         console.error('Synthesis failed, skipping...');

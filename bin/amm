@@ -79,7 +79,7 @@ else
 
     # Show the prompt before model selection
     echo ""
-    echo "Prompt:"
+    gum style --foreground 212 "Prompt:"
     echo "$PROMPT"
     echo ""
 
