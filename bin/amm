@@ -128,17 +128,23 @@ echo "Querying: $MODELS_CSV"
 echo "Output: $LIVE_FILE"
 echo ""
 
-# Build the query command
-QUERY_CMD="yarn --cwd \"$SKILL_DIR\" query --models \"$MODELS_CSV\" --live-file \"$LIVE_FILE\""
+# Build the query command as an array to properly handle special characters
+QUERY_ARGS=(
+    --cwd "$SKILL_DIR"
+    query
+    --models "$MODELS_CSV"
+    --live-file "$LIVE_FILE"
+)
 
 if [[ "$SYNTHESISE" == "true" ]]; then
-    QUERY_CMD="$QUERY_CMD --synthesise"
+    QUERY_ARGS+=(--synthesise)
 fi
 
-QUERY_CMD="$QUERY_CMD \"$PROMPT\""
+# Add prompt as the final argument (preserves quotes and special chars)
+QUERY_ARGS+=("$PROMPT")
 
 # Run the query
-eval "$QUERY_CMD"
+yarn "${QUERY_ARGS[@]}"
 
 # Open the file
 echo ""
