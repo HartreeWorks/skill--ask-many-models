@@ -72,6 +72,13 @@ else
     PROMPT="$1"
 fi
 
+# Validate prompt is not empty or whitespace-only
+PROMPT_TRIMMED=$(echo "$PROMPT" | xargs)
+if [[ -z "$PROMPT_TRIMMED" ]]; then
+    echo "Error: Prompt cannot be empty."
+    exit 1
+fi
+
 # Read default models from user-defaults.json
 DEFAULT_MODELS=$(jq -r '.default_models[]' "$DEFAULTS_FILE")
 DEFAULT_MODELS_CSV=$(echo "$DEFAULT_MODELS" | tr '\n' ',' | sed 's/,$//')
@@ -186,12 +193,21 @@ if [[ "${IS_DEEP_RESEARCH:-false}" == "true" ]]; then
                 ;;
             "Browse files"*)
                 echo ""
-                echo "Select a file or folder:"
+                echo "Select a file:"
                 gum style --faint "  → to open folder | Enter to select | Esc to cancel"
                 SELECTED=$(gum file --directory --file --height=15 "$HOME" || true)
-                if [[ -n "$SELECTED" && -e "$SELECTED" ]]; then
-                    CONTEXT_FILES+=("$SELECTED")
-                    CONTEXT_DESCRIPTIONS+=("$SELECTED")
+                if [[ -n "$SELECTED" ]]; then
+                    if [[ -d "$SELECTED" ]]; then
+                        gum style --foreground 196 "Cannot use directory as context. Please select a file."
+                    elif [[ -f "$SELECTED" ]]; then
+                        # Check if it's a binary file
+                        if file "$SELECTED" | grep -q "text"; then
+                            CONTEXT_FILES+=("$SELECTED")
+                            CONTEXT_DESCRIPTIONS+=("$SELECTED")
+                        else
+                            gum style --foreground 196 "Cannot use binary file as context. Please select a text file."
+                        fi
+                    fi
                 fi
                 ;;
             "Paste or drag"*)
@@ -199,11 +215,19 @@ if [[ "${IS_DEEP_RESEARCH:-false}" == "true" ]]; then
                 SELECTED=$(gum input --placeholder "Paste path or drag file here..." --width=80 || true)
                 # Expand ~ to home directory
                 SELECTED="${SELECTED/#\~/$HOME}"
-                if [[ -n "$SELECTED" && -e "$SELECTED" ]]; then
-                    CONTEXT_FILES+=("$SELECTED")
-                    CONTEXT_DESCRIPTIONS+=("$SELECTED")
-                elif [[ -n "$SELECTED" ]]; then
-                    gum style --foreground 196 "File not found: $SELECTED"
+                if [[ -n "$SELECTED" ]]; then
+                    if [[ ! -e "$SELECTED" ]]; then
+                        gum style --foreground 196 "File not found: $SELECTED"
+                    elif [[ -d "$SELECTED" ]]; then
+                        gum style --foreground 196 "Cannot use directory as context. Please specify a file."
+                    elif [[ -f "$SELECTED" ]]; then
+                        if file "$SELECTED" | grep -q "text"; then
+                            CONTEXT_FILES+=("$SELECTED")
+                            CONTEXT_DESCRIPTIONS+=("$SELECTED")
+                        else
+                            gum style --foreground 196 "Cannot use binary file as context. Please specify a text file."
+                        fi
+                    fi
                 fi
                 ;;
             "Paste text"*)
@@ -224,7 +248,7 @@ if [[ "${IS_DEEP_RESEARCH:-false}" == "true" ]]; then
                     echo ""
                     echo "Searching files (type to filter, Enter to select, Esc to cancel):"
                     SELECTED=$(find "$HOME" -type f \( -name "*.md" -o -name "*.txt" -o -name "*.pdf" \) 2>/dev/null | fzf --height=15 --preview 'head -20 {}' || true)
-                    if [[ -n "$SELECTED" && -e "$SELECTED" ]]; then
+                    if [[ -n "$SELECTED" && -f "$SELECTED" ]]; then
                         CONTEXT_FILES+=("$SELECTED")
                         CONTEXT_DESCRIPTIONS+=("$SELECTED")
                     fi
@@ -234,9 +258,17 @@ if [[ "${IS_DEEP_RESEARCH:-false}" == "true" ]]; then
                     echo "Falling back to file browser..."
                     gum style --faint "  → to open folder | Enter to select | Esc to cancel"
                     SELECTED=$(gum file --directory --file --height=15 "$HOME" || true)
-                    if [[ -n "$SELECTED" && -e "$SELECTED" ]]; then
-                        CONTEXT_FILES+=("$SELECTED")
-                        CONTEXT_DESCRIPTIONS+=("$SELECTED")
+                    if [[ -n "$SELECTED" ]]; then
+                        if [[ -d "$SELECTED" ]]; then
+                            gum style --foreground 196 "Cannot use directory as context. Please select a file."
+                        elif [[ -f "$SELECTED" ]]; then
+                            if file "$SELECTED" | grep -q "text"; then
+                                CONTEXT_FILES+=("$SELECTED")
+                                CONTEXT_DESCRIPTIONS+=("$SELECTED")
+                            else
+                                gum style --foreground 196 "Cannot use binary file as context. Please select a text file."
+                            fi
+                        fi
                     fi
                 fi
                 ;;
@@ -262,6 +294,10 @@ fi
 # Generate output file path
 TIMESTAMP=$(date +%Y-%m-%d-%H%M)
 SLUG=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//' | cut -c1-50)
+# Fallback if slug is empty (e.g., prompt was all unicode)
+if [[ -z "$SLUG" ]]; then
+    SLUG="query"
+fi
 LIVE_FILE="$RESPONSES_DIR/${TIMESTAMP}-${SLUG}.md"
 
 echo ""
