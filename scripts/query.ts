@@ -726,6 +726,7 @@ function printSummary(results: ModelResult[]): void {
     const latency = r.latencyMs ? `${(r.latencyMs / 1000).toFixed(1)}s` : 'N/A';
     console.log(`  ${status} ${r.model}: ${latency}`);
   }
+  console.log('');
 }
 
 // Main query command
