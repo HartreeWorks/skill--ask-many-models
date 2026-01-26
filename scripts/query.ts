@@ -970,15 +970,11 @@ async function runQuery(
     console.log('\nWaiting for deep research to complete (this may take 20-40 minutes)...');
     console.log('Quick model results are already available in the live file.\n');
 
-    // Animated progress display (only if TTY)
+    // Progress display (updates every 10s since deep research takes 20-40 min)
     const isTTY = process.stdout.isTTY;
-    const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
-    let frameIndex = 0;
     let lastPrintedLines = 0;
 
     const printProgress = () => {
-      frameIndex = (frameIndex + 1) % spinnerFrames.length;
-      const spinner = spinnerFrames[frameIndex];
       const now = new Date();
 
       // Build status line for each model
@@ -990,7 +986,7 @@ async function runQuery(
         const elapsedStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
         const statusIcon = info.status === 'completed' ? '✓' :
-                          info.status === 'failed' ? '✗' : spinner;
+                          info.status === 'failed' ? '✗' : '◐';
 
         const lastCheckAgo = Math.floor((now.getTime() - info.lastUpdate.getTime()) / 1000);
         const checkStr = lastCheckAgo < 5 ? '' : ` (checked ${lastCheckAgo}s ago)`;
@@ -1010,8 +1006,8 @@ async function runQuery(
     // Print initial status
     printProgress();
 
-    // Update every 500ms for animation, or every 10s for non-TTY
-    const updateInterval = isTTY ? 500 : 10000;
+    // Update every 10s - deep research takes 20-40 min so frequent updates aren't useful
+    const updateInterval = 10000;
     const progressInterval = setInterval(printProgress, updateInterval);
 
     await Promise.all(deepResearchPromises);
