@@ -998,7 +998,7 @@ async function runQuery(
         if (info.status !== 'completed' && info.status !== 'failed') {
           const lastCheckAgo = Math.floor((now.getTime() - info.lastUpdate.getTime()) / 1000);
           if (lastCheckAgo >= 5) {
-            checkStr = ` (checked ${lastCheckAgo}s ago)`;
+            checkStr = ` (status checked ${lastCheckAgo}s ago)`;
           }
         }
 
