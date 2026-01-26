@@ -47,16 +47,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ $# -lt 1 ]]; then
-    echo "Usage: amm [options] \"Your prompt here\""
-    echo ""
-    echo "Options:"
-    echo "  --quick, -q        Skip model selection, use defaults"
-    echo "  --no-synthesise    Skip synthesis step"
-    echo ""
-    exit 1
+    # No prompt provided - use gum to get interactive input
+    PROMPT=$(gum write --placeholder "Enter your prompt..." --width=80 --height=6)
+    if [[ -z "$PROMPT" ]]; then
+        echo "No prompt entered."
+        exit 1
+    fi
+else
+    PROMPT="$1"
 fi
-
-PROMPT="$1"
 
 # Read default models from user-defaults.json
 DEFAULT_MODELS=$(jq -r '.default_models[]' "$DEFAULTS_FILE")
@@ -64,7 +63,6 @@ DEFAULT_MODELS_CSV=$(echo "$DEFAULT_MODELS" | tr '\n' ',' | sed 's/,$//')
 
 # Get preset info
 QUICK_MODELS=$(jq -r '.presets.quick.models | join(",")' "$CONFIG_FILE")
-FRONTIER_MODELS=$(jq -r '.presets.frontier.models | join(",")' "$CONFIG_FILE")
 COMPREHENSIVE_MODELS=$(jq -r '.presets.comprehensive.models | join(",")' "$CONFIG_FILE")
 
 # Read all available API models from config.json (exclude browser models)
@@ -73,27 +71,27 @@ ALL_MODELS=$(jq -r '.models | to_entries | map(select(.value.type == "api")) | .
 if [[ "$SKIP_SELECT" == "true" ]]; then
     MODELS_CSV="$DEFAULT_MODELS_CSV"
 else
-    # Build options: presets first, then separator, then individual models
-    echo "Select mode or models:"
-    echo "  ↑/↓ navigate  •  space toggle  •  enter confirm"
+    # Convert ALL_MODELS to array for proper argument handling
+    ALL_MODELS_ARRAY=()
+    while IFS= read -r model; do
+        [[ -n "$model" ]] && ALL_MODELS_ARRAY+=("$model")
+    done <<< "$ALL_MODELS"
+
+    # Show the prompt before model selection
+    echo ""
+    echo "Prompt:"
+    echo "$PROMPT"
     echo ""
 
-    # Create options array with presets first
-    OPTIONS=(
+    # First screen: presets or pick individual models
+    PRESET_OPTIONS=(
         "⚡ Defaults ($DEFAULT_MODELS_CSV)"
         "🚀 Quick ($QUICK_MODELS)"
-        "🎯 Frontier ($FRONTIER_MODELS)"
-        "📊 Comprehensive ($COMPREHENSIVE_MODELS)"
-        "───────────────────"
+        "📊 Comprehensive (all default models + GPT 5.2 Pro)"
+        "🔧 Pick individual models..."
     )
 
-    # Add individual models
-    for model in $ALL_MODELS; do
-        OPTIONS+=("$model")
-    done
-
-    # Run gum choose (single select for presets, but allow drilling into individual)
-    SELECTION=$(gum choose --height=18 "${OPTIONS[@]}" || true)
+    SELECTION=$(gum choose --height=10 "${PRESET_OPTIONS[@]}" || true)
 
     if [[ -z "$SELECTION" ]]; then
         echo "No selection made, using defaults."
@@ -102,27 +100,20 @@ else
         MODELS_CSV="$DEFAULT_MODELS_CSV"
     elif [[ "$SELECTION" == "🚀 Quick"* ]]; then
         MODELS_CSV="$QUICK_MODELS"
-    elif [[ "$SELECTION" == "🎯 Frontier"* ]]; then
-        MODELS_CSV="$FRONTIER_MODELS"
     elif [[ "$SELECTION" == "📊 Comprehensive"* ]]; then
         MODELS_CSV="$COMPREHENSIVE_MODELS"
-    elif [[ "$SELECTION" == "───"* ]]; then
-        echo "That's a separator. Using defaults."
-        MODELS_CSV="$DEFAULT_MODELS_CSV"
-    else
-        # User selected an individual model - let them pick more
+    elif [[ "$SELECTION" == "🔧 Pick"* ]]; then
+        # Show individual models with multi-select
         echo ""
-        echo "Select additional models (or just press enter):"
+        echo "Select models (space to toggle, enter to confirm):"
 
-        # Build options with the first selection pre-selected
-        SELECTED_ARGS="--selected=\"$SELECTION\""
+        MODEL_SELECTIONS=$(gum choose --no-limit --height=15 "${ALL_MODELS_ARRAY[@]}" || true)
 
-        MORE_SELECTIONS=$(eval "gum choose --no-limit --height=15 $SELECTED_ARGS $ALL_MODELS" || true)
-
-        if [[ -z "$MORE_SELECTIONS" ]]; then
-            MODELS_CSV="$SELECTION"
+        if [[ -z "$MODEL_SELECTIONS" ]]; then
+            echo "No models selected, using defaults."
+            MODELS_CSV="$DEFAULT_MODELS_CSV"
         else
-            MODELS_CSV=$(echo "$MORE_SELECTIONS" | tr '\n' ',' | sed 's/,$//')
+            MODELS_CSV=$(echo "$MODEL_SELECTIONS" | tr '\n' ',' | sed 's/,$//')
         fi
     fi
 fi
