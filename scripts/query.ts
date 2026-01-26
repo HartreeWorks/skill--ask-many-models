@@ -423,7 +423,7 @@ async function queryModelsWithProgress(options: QueryModelsOptions): Promise<Mod
   const tracker = new ProgressTracker(modelNames, config);
 
   // Print header info
-  console.log(`\nQuerying ${modelNames.length} models...`);
+  console.log(`\n\x1b[36m📡 Querying ${modelNames.length} models...\x1b[0m`);
   if (imagePath) {
     console.log(`Image: ${imagePath}`);
     console.log(`Vision models: ${modelNames.filter(m => VISION_MODELS.includes(m)).join(', ') || 'none'}`);
@@ -574,7 +574,7 @@ async function performSynthesis(
   const synthesisPrompt = generateSynthesisPrompt(prompt, results, depth);
 
   if (useFastModel) {
-    console.log('\n=== Running Synthesis with Gemini 3 Flash ===\n');
+    console.log('\n\x1b[35m✨ Running Synthesis with Gemini 3 Flash\x1b[0m\n');
 
     try {
       const result = await generateText({
@@ -589,7 +589,7 @@ async function performSynthesis(
       throw error;
     }
   } else {
-    console.log('\n=== Running Synthesis with Claude Opus 4.5 ===\n');
+    console.log('\n\x1b[35m✨ Running Synthesis with Claude Opus 4.5\x1b[0m\n');
 
     try {
       const result = await generateText({
@@ -707,7 +707,7 @@ function appendSynthesisToLiveFile(filePath: string, synthesis: string): void {
 
 // Print summary of results
 function printSummary(results: ModelResult[]): void {
-  console.log('\n=== Results Summary ===\n');
+  console.log('\n\x1b[1m📊 Results Summary\x1b[0m\n');
 
   const successful = results.filter((r) => r.status === 'success');
   const failed = results.filter((r) => r.status !== 'success');
@@ -830,7 +830,7 @@ async function runQuery(
   const deepResearchStatus = new Map<string, { status: string; elapsedMs: number; lastUpdate: Date }>();
 
   if (hasDeepResearch) {
-    console.log(`\nStarting ${deepResearchModels.length} deep research model(s) in background...`);
+    console.log(`\n\x1b[1m\x1b[33m🔬 Starting ${deepResearchModels.length} deep research model(s) in background...\x1b[0m`);
 
     for (const modelName of deepResearchModels) {
       const modelConfig = config.models[modelName];
@@ -967,8 +967,8 @@ async function runQuery(
 
   // Wait for deep research to complete (this can take 20-40 min)
   if (deepResearchPromises.length > 0) {
-    console.log('\nWaiting for deep research to complete (this may take 20-40 minutes)...');
-    console.log('Quick model results are already available in the live file.\n');
+    console.log('\n\x1b[1m\x1b[33m⏳ Waiting for deep research to complete (this may take 20-40 minutes)...\x1b[0m');
+    console.log('\x1b[2m   Quick model results are already available in the live file.\x1b[0m\n');
 
     // Progress display (updates every 10s since deep research takes 20-40 min)
     const isTTY = process.stdout.isTTY;
@@ -1015,7 +1015,7 @@ async function runQuery(
 
     // Print final status
     printProgress();
-    console.log('\nDeep research complete!\n');
+    console.log('\n\x1b[1m\x1b[32m✅ Deep research complete!\x1b[0m\n');
 
     // Convert deep research results to ModelResult format and add to allResults
     for (const [modelName, result] of deepResearchResults) {
