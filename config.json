@@ -2,24 +2,23 @@
   "presets": {
     "quick": {
       "description": "Fast responses from efficient models",
-      "models": ["gemini-3-flash", "grok-4"],
+      "models": ["gemini-3-flash", "grok-4.1-non-reasoning", "claude-4.5-sonnet"],
       "timeout_seconds": 60
     },
-    "frontier": {
-      "description": "Best-in-class models for complex reasoning",
-      "models": ["gpt-5.2", "gemini-3-pro", "grok-4"],
-      "timeout_seconds": 180
-    },
     "comprehensive": {
-      "description": "All available API models",
-      "models": ["gpt-5.2", "gemini-3-pro", "gemini-3-flash", "grok-4", "claude-4.5-opus"],
+      "description": "All default models plus GPT-5.2 Pro",
+      "models": ["gpt-5.2-thinking", "claude-4.5-opus-thinking", "gemini-3-pro", "grok-4.1", "gpt-5.2-pro"],
       "timeout_seconds": 300
     },
     "deep-research": {
-      "description": "Deep research mode - async, browser-based",
-      "models": ["chatgpt-deep-research"],
-      "async": true,
-      "requires_browser": true
+      "description": "Deep research (20-40 min per model)",
+      "models": ["openai-deep-research", "gemini-deep-research"],
+      "timeout_seconds": 3600
+    },
+    "comprehensive-deep": {
+      "description": "Quick models + deep research",
+      "models": ["gpt-5.2-thinking", "claude-4.5-opus-thinking", "gemini-3-pro", "grok-4.1", "openai-deep-research", "gemini-deep-research"],
+      "timeout_seconds": 3600
     }
   },
   "models": {
@@ -43,7 +42,9 @@
       "model_id": "gpt-5.2-pro",
       "display_name": "GPT-5.2 Pro",
       "type": "api",
-      "max_tokens": 32000
+      "max_tokens": 32000,
+      "slow": true,
+      "timeout_seconds": 3600
     },
     "claude-4.5-opus": {
       "provider": "anthropic",
@@ -60,10 +61,10 @@
       "max_tokens": 32000,
       "reasoning": true
     },
-    "claude-4-sonnet": {
+    "claude-4.5-sonnet": {
       "provider": "anthropic",
-      "model_id": "claude-sonnet-4-20250514",
-      "display_name": "Claude 4 Sonnet",
+      "model_id": "claude-sonnet-4-5-20250929",
+      "display_name": "Claude 4.5 Sonnet",
       "type": "api",
       "max_tokens": 16000
     },
@@ -81,33 +82,19 @@
       "type": "api",
       "max_tokens": 16000
     },
-    "grok-4": {
-      "provider": "xai",
-      "model_id": "grok-4",
-      "display_name": "Grok 4",
-      "type": "api",
-      "max_tokens": 16000
-    },
     "grok-4.1": {
       "provider": "xai",
-      "model_id": "grok-4.1",
-      "display_name": "Grok 4.1",
+      "model_id": "grok-4-1-fast-reasoning",
+      "display_name": "Grok 4.1 (Reasoning)",
       "type": "api",
       "max_tokens": 16000
     },
-    "o3-deep-research": {
-      "provider": "openai",
-      "model_id": "o3-deep-research-2025-06-26",
-      "display_name": "OpenAI Deep Research (o3)",
+    "grok-4.1-non-reasoning": {
+      "provider": "xai",
+      "model_id": "grok-4-1-fast-non-reasoning",
+      "display_name": "Grok 4.1 (Fast)",
       "type": "api",
-      "max_tokens": 64000
-    },
-    "o4-mini-deep-research": {
-      "provider": "openai",
-      "model_id": "o4-mini-deep-research-2025-06-26",
-      "display_name": "OpenAI Deep Research (o4-mini)",
-      "type": "api",
-      "max_tokens": 32000
+      "max_tokens": 16000
     },
     "gpt-5.2-pro-browser": {
       "provider": "openai",
@@ -116,19 +103,27 @@
       "url": "https://chatgpt.com/?model=gpt-5.2-pro",
       "requires_browser": true
     },
-    "chatgpt-deep-research": {
-      "provider": "openai",
-      "display_name": "ChatGPT Deep Research",
-      "type": "browser",
-      "url": "https://chatgpt.com/",
-      "mode": "deep-research",
-      "async": true,
-      "typical_duration_minutes": 30,
-      "requires_browser": true
+    "openai-deep-research": {
+      "provider": "openai-deep",
+      "model_id": "o3-deep-research-2025-06-26",
+      "display_name": "OpenAI Deep Research",
+      "type": "api",
+      "deep_research": true,
+      "timeout_seconds": 3600,
+      "poll_interval_ms": 10000
+    },
+    "gemini-deep-research": {
+      "provider": "gemini-deep",
+      "model_id": "deep-research-pro-preview-12-2025",
+      "display_name": "Gemini Deep Research",
+      "type": "api",
+      "deep_research": true,
+      "timeout_seconds": 3600,
+      "poll_interval_ms": 10000
     }
   },
   "defaults": {
-    "preset": "frontier",
+    "preset": "quick",
     "synthesis_depth": "executive",
     "max_tokens": 4000
   },

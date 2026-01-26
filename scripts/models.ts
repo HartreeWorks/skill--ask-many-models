@@ -9,7 +9,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import type { LanguageModel } from 'ai';
 
 export interface ModelConfig {
-  provider: 'openai' | 'google' | 'xai' | 'anthropic';
+  provider: 'openai' | 'google' | 'xai' | 'anthropic' | 'openai-deep' | 'gemini-deep';
   display_name?: string;
   reasoning?: boolean;
   model_id: string;
@@ -20,6 +20,10 @@ export interface ModelConfig {
   url?: string;
   mode?: string;
   typical_duration_minutes?: number;
+  slow?: boolean;
+  timeout_seconds?: number;
+  deep_research?: boolean;
+  poll_interval_ms?: number;
 }
 
 export interface PresetConfig {
@@ -66,6 +70,10 @@ export function createModel(modelName: string, config: Config): LanguageModel | 
       return xai(modelConfig.model_id);
     case 'anthropic':
       return anthropic(modelConfig.model_id);
+    case 'openai-deep':
+    case 'gemini-deep':
+      // Deep research models are handled separately, not via Vercel AI SDK
+      return null;
     default:
       console.error(`Unknown provider: ${modelConfig.provider}`);
       return null;
@@ -126,6 +134,28 @@ export function listPresets(config: Config): void {
     console.log(`    Models: ${preset.models.join(', ')}`);
     console.log('');
   }
+}
+
+/**
+ * Check if a model is a deep research model
+ */
+export function isDeepResearchModel(modelName: string, config: Config): boolean {
+  const modelConfig = config.models[modelName];
+  return modelConfig?.deep_research === true;
+}
+
+/**
+ * Get deep research models from a list
+ */
+export function getDeepResearchModels(modelNames: string[], config: Config): string[] {
+  return modelNames.filter(name => isDeepResearchModel(name, config));
+}
+
+/**
+ * Get non-deep research models from a list
+ */
+export function getQuickModels(modelNames: string[], config: Config): string[] {
+  return modelNames.filter(name => !isDeepResearchModel(name, config));
 }
 
 /**
