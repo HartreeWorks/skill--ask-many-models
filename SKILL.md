@@ -7,14 +7,80 @@ description: This skill should be used when the user asks to "ask many models", 
 
 Send the same prompt to multiple AI models in parallel and synthesise their responses into a unified analysis.
 
-## Purpose
+## When this skill is invoked
 
-When users want to gather perspectives from multiple AI models (GPT, Gemini, Grok, etc.), this skill orchestrates:
-1. Parallel queries to selected models via API
-2. Collection and storage of responses
-3. Synthesis that identifies consensus, unique insights, and disagreements
+**IMPORTANT**: When this skill is triggered (via `/ask-many-models` or natural language), follow the execution steps below. Do NOT just describe what the skill does.
 
-## Quick Start
+### Execution Steps
+
+#### Step 1: Get the prompt
+
+If the user provided a prompt/question, use it. Otherwise ask: "What question would you like to send to multiple AI models?"
+
+#### Step 2: Model selection
+
+Use AskUserQuestion to ask which models to use:
+
+- **Header**: "Models"
+- **Question**: "Which models should I query?"
+- **Options**:
+  1. "Defaults" - GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Grok 4.1 (Recommended)
+  2. "Quick" - Gemini 3 Flash, Grok 4.1 Fast, Claude 4.5 Sonnet (~10s)
+  3. "Deep Research" - Defaults + OpenAI/Gemini deep research (20-40 min)
+  4. "Pick models" - Choose individual models
+
+If "Pick models" selected, print this numbered list and ask user to type the numbers they want (comma-separated):
+
+```
+Available models:
+1. gpt-5.2-thinking (default)
+2. claude-4.5-opus-thinking (default)
+3. gemini-3-pro (default)
+4. grok-4.1 (default)
+5. gemini-3-flash
+6. grok-4.1-non-reasoning
+7. claude-4.5-sonnet
+8. gpt-5.2
+9. gpt-5.2-pro (slow)
+10. claude-4.5-opus
+11. openai-deep-research (20-40 min)
+12. gemini-deep-research (20-40 min)
+
+Enter numbers (e.g. 1,2,5):
+```
+
+Then map user's numbers to model IDs.
+
+#### Step 3: Check for images
+
+If an image is in the conversation, save it to:
+`/Users/ph/.claude/skills/ask-many-models/multi-model-responses/image-TIMESTAMP.png`
+
+#### Step 4: Run the query
+
+Map selection to model IDs:
+- **Defaults**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1`
+- **Quick**: `gemini-3-flash,grok-4.1-non-reasoning,claude-4.5-sonnet`
+- **Deep Research**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1,openai-deep-research,gemini-deep-research`
+
+Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars).
+
+```bash
+cd /Users/ph/.claude/skills/ask-many-models && yarn query \
+  --models "<model-ids>" \
+  --live-file "/Users/ph/.claude/skills/ask-many-models/multi-model-responses/$(date +%Y-%m-%d-%H%M)-<slug>.md" \
+  --synthesise \
+  [--image "<path>"] \
+  "<prompt>"
+```
+
+#### Step 5: Open results
+
+Say "Querying: [models]" and open the live file: `open "<live-file-path>"`
+
+---
+
+## Reference Documentation
 
 ### Terminal CLI (Fastest)
 
@@ -28,30 +94,6 @@ Options:
 - `--quick` or `-q` - Skip model selection, use defaults
 - `--no-synthesise` - Skip the synthesis step
 
-The CLI will:
-1. Show an interactive model selector (using gum) with defaults pre-checked
-2. Query selected models in parallel
-3. Run automatic synthesis using Claude Opus 4.5 with extended thinking
-4. Open the results markdown file
-
-**Default models** are configured in `data/user-defaults.json`.
-
-### Claude Command
-
-Use the `/amm` command from any Claude Code session:
-
-```
-/amm "What are the key considerations for X?"
-```
-
-When invoked, the command will:
-1. Show a model selection dialog (defaults: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Grok 4, Gemini 3 Pro, Gemini 3 Flash)
-2. Create a live-updating markdown file with all responses
-3. Open the file automatically so you can watch responses come in
-4. Synthesise results once all models respond
-
-**Model selection**: Press Enter to use defaults, or select specific models from the list.
-
 **Default models** are configured in `data/user-defaults.json`.
 
 ### Image Support
@@ -62,7 +104,7 @@ Paste an image into your message along with your question to have vision-capable
 /amm "What's in this image?" [paste image]
 ```
 
-Vision-capable models: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Gemini 3 Flash
+Vision-capable models: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Claude 4.5 Sonnet, Gemini 3 Pro, Gemini 3 Flash
 
 Models without vision support will receive just the text prompt with a note that an image was provided.
 
@@ -76,7 +118,7 @@ yarn query "Your question here"
 ```
 
 Options:
-- `--preset <name>` - Use a preset: `quick`, `frontier`, `comprehensive`
+- `--preset <name>` - Use a preset: `quick`, `comprehensive`
 - `--models <list>` - Specify models: `gpt-4o,gemini-2.0-flash`
 - `--timeout <seconds>` - Timeout per model (default: 180)
 - `--image <path>` - Include an image file for vision models
@@ -123,58 +165,65 @@ Alternatively, read the individual responses from the `individual/` subdirectory
 
 | Preset | Models | Use Case |
 |--------|--------|----------|
-| `quick` | Gemini 3 Flash, Grok 4 | Fast responses (~5s) |
-| `frontier` | GPT-5.2, Gemini 3 Pro, Grok 4 | Best reasoning (~30s) |
-| `comprehensive` | All API models | Thorough coverage (~60s) |
-| `deep-research` | ChatGPT Deep Research | In-depth research (browser, 30+ min) |
+| `quick` | Gemini 3 Flash, Grok 4.1 (Fast), Claude 4.5 Sonnet | Fast responses (~10s) |
+| `comprehensive` | Defaults + GPT-5.2 Pro | Thorough coverage (~60s) |
+| `deep-research` | OpenAI Deep Research, Gemini Deep Research | In-depth research (API, 20-40 min) |
+| `comprehensive-deep` | Quick models + deep research | Best of both worlds |
 
-## Browser-Based Models
+## Deep Research Mode
 
-Some models require browser interaction:
-- **GPT-5 Pro** - Subscription-only via ChatGPT web interface
-- **ChatGPT Deep Research** - Async research mode (30+ minutes)
+Deep research models (OpenAI o3-deep-research and Gemini Deep Research) conduct comprehensive web research and take 20-40 minutes per model.
 
-### Using Browser Models
+### Using Deep Research
 
-For browser-based models, Claude must be started with `--chrome`:
+From the `amm` CLI, select "🔬 Deep Research" or "🔬📊 Comprehensive + Deep Research":
 
 ```bash
-claude --chrome
+amm "What are the latest developments in quantum computing?"
 ```
 
-When browser models are requested:
+When deep research is selected:
+1. **Duration warning** is shown (20-40 minutes expected)
+2. **Context picker** lets you add files/folders as background context
+3. **Quick models** return results in ~30 seconds with preliminary synthesis
+4. **Deep research** shows progress updates every 10 seconds
+5. **Final synthesis** updates when deep research completes
+6. **Desktop notification** fires on completion
 
-1. Navigate to the appropriate web interface (e.g., chatgpt.com)
-2. Enter the prompt manually or via browser automation
-3. For Deep Research: submit and note the conversation URL
-4. Wait for response (or track async requests)
-5. Copy response to the output directory
+### Context Files
 
-### Deep Research Workflow
+Add context to your deep research queries:
 
-1. User requests deep research:
-   ```
-   Ask many models with deep-research preset: [complex question]
-   ```
+1. When prompted, select "Add context file/folder..."
+2. Choose a file (`.md`, `.txt`) or folder
+3. Context is prepended to the prompt for all models
 
-2. Claude navigates to ChatGPT and initiates Deep Research
+This is useful for:
+- Research related to a specific project
+- Questions about documents you've written
+- Follow-up research with prior findings
 
-3. Response is tracked in `data/pending.json`:
-   ```json
-   {
-     "id": "req_...",
-     "prompt": "...",
-     "status": "pending",
-     "started_at": "...",
-     "chat_url": "https://chatgpt.com/c/..."
-   }
-   ```
+### How It Works
 
-4. When complete, Claude:
-   - Retrieves the response
-   - Saves to output directory
-   - Sends desktop notification via terminal-notifier
-   - Updates pending.json status
+1. Quick models (GPT, Claude, Gemini, Grok) query in parallel → results in ~30s
+2. Deep research models start in background with progress polling
+3. Preliminary synthesis runs with quick model responses
+4. Deep research updates show status every 10 seconds
+5. Final synthesis incorporates deep research findings when complete
+
+### API Keys for Deep Research
+
+Deep research requires additional API keys in `.env`:
+
+```bash
+# For OpenAI Deep Research (o3-deep-research)
+OPENAI_API_KEY=sk-proj-xxx
+
+# For Gemini Deep Research
+GEMINI_API_KEY=AIza-xxx
+# or
+GOOGLE_API_KEY=AIza-xxx
+```
 
 ## Synthesis Approach
 
@@ -231,18 +280,27 @@ multi-model-responses/
 
 ## Available Models
 
+### Quick/Standard Models
+
 | Model ID | Display Name | Provider | Vision |
 |----------|--------------|----------|--------|
 | gpt-5.2-thinking | GPT-5.2 Thinking | OpenAI | ✓ |
 | claude-4.5-opus-thinking | Claude 4.5 Opus Thinking | Anthropic | ✓ |
-| grok-4 | Grok 4 | xAI | |
+| grok-4.1 | Grok 4.1 (Reasoning) | xAI | |
 | gemini-3-pro | Gemini 3 Pro | Google | ✓ |
 | gemini-3-flash | Gemini 3 Flash | Google | ✓ |
 | gpt-5.2 | GPT-5.2 | OpenAI | ✓ |
 | gpt-5.2-pro | GPT-5.2 Pro | OpenAI | ✓ |
 | claude-4.5-opus | Claude 4.5 Opus | Anthropic | ✓ |
-| claude-4-sonnet | Claude 4 Sonnet | Anthropic | ✓ |
-| grok-4.1 | Grok 4.1 | xAI | |
+| claude-4.5-sonnet | Claude 4.5 Sonnet | Anthropic | ✓ |
+| grok-4.1-non-reasoning | Grok 4.1 (Fast) | xAI | |
+
+### Deep Research Models
+
+| Model ID | Display Name | Provider | Duration |
+|----------|--------------|----------|----------|
+| openai-deep-research | OpenAI Deep Research | OpenAI | 20-40 min |
+| gemini-deep-research | Gemini Deep Research | Google | 20-40 min |
 
 ## Notifications
 
@@ -252,6 +310,18 @@ Desktop notifications via terminal-notifier:
   - Query completes
   - Async request (deep research) completes
   - Errors occur
+
+## Slow Models & Progressive Synthesis
+
+Some models (like GPT-5.2 Pro) use extra compute and can take 10-60 minutes for complex queries. These are marked as "slow" in the config.
+
+When slow models are included:
+1. **Progress display** shows real-time status of all models with ✓/✗/◐ icons
+2. **Fast models complete first** → preliminary synthesis runs immediately
+3. **Slow models continue** in background with "(slow)" indicator
+4. **Final synthesis** replaces preliminary when all models complete
+
+The live markdown file updates continuously so you can read responses as they arrive.
 
 ## Error Handling
 
@@ -263,7 +333,7 @@ Desktop notifications via terminal-notifier:
 ## Tips
 
 1. **Start with `quick` preset** for rapid iteration
-2. **Use `frontier` for important questions** where quality matters
+2. **Use defaults for important questions** where quality matters
 3. **Save synthesis prompts** for consistent formatting
 4. **Check individual responses** when synthesis seems off
 5. **Update model IDs** in config.json as providers release new models

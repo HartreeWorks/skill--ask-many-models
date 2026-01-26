@@ -23,8 +23,19 @@ import {
   presetRequiresBrowser,
   listPresets,
   listModels,
+  isDeepResearchModel,
+  getDeepResearchModels,
+  getQuickModels,
   type Config,
 } from './models.js';
+import { readContext } from './context.js';
+import {
+  queryDeepResearch,
+  formatDeepResearchResponse,
+  type DeepResearchProgress,
+  type DeepResearchResult,
+} from './deep-research-query.js';
+import { notifyDeepResearchComplete } from './notify.js';
 import {
   generateSynthesisPrompt,
   loadResponses,
@@ -603,12 +614,64 @@ async function performSynthesis(
   }
 }
 
+// Update deep research progress in the live file
+function updateDeepResearchProgress(filePath: string, progress: DeepResearchProgress): void {
+  if (!existsSync(filePath)) return;
+
+  let content = readFileSync(filePath, 'utf-8');
+  const modelName = progress.modelName;
+
+  // Format elapsed time
+  const elapsedSec = Math.floor(progress.elapsedMs / 1000);
+  const mins = Math.floor(elapsedSec / 60);
+  const secs = elapsedSec % 60;
+  const elapsedStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+  const statusIcon = progress.status === 'completed' ? '✓' :
+                     progress.status === 'failed' ? '✗' : '◐';
+
+  // Match the model section and update its status
+  const pattern = new RegExp(`# ${modelName}\\n\\n---\\n\\n[\\s\\S]*?(?=\\n# [^#]|$)`, 'g');
+
+  const replacement = `# ${modelName}\n\n---\n\n_${statusIcon} Status: ${progress.status} (elapsed: ${elapsedStr})_\n\n`;
+
+  content = content.replace(pattern, replacement);
+  writeFileSync(filePath, content);
+}
+
+// Update live file with completed deep research result
+function updateLiveFileWithDeepResearch(filePath: string, modelName: string, result: DeepResearchResult): void {
+  if (!existsSync(filePath)) return;
+
+  let content = readFileSync(filePath, 'utf-8');
+
+  const pattern = new RegExp(`# ${modelName}\\n\\n---\\n\\n[\\s\\S]*?(?=\\n# [^#]|$)`, 'g');
+
+  let replacement = `# ${modelName}\n\n---\n\n`;
+  if (result.status === 'success') {
+    const formattedResponse = formatDeepResearchResponse(result);
+    // Normalise any H1 headings in the response to H2
+    const normalisedResponse = normaliseHeadings(formattedResponse);
+    replacement += normalisedResponse;
+    replacement += `\n\n_Latency: ${((result.latencyMs || 0) / 1000 / 60).toFixed(1)} min`;
+    if (result.requestId) {
+      replacement += ` | Request ID: ${result.requestId.slice(0, 8)}...`;
+    }
+    replacement += `_\n\n`;
+  } else {
+    replacement += `**Error:** ${result.error}\n\n`;
+  }
+
+  content = content.replace(pattern, replacement);
+  writeFileSync(filePath, content);
+}
+
 // Update or insert synthesis in the live markdown file
-function updateSynthesisInLiveFile(filePath: string, synthesis: string, isPreliminary: boolean = false): void {
+function updateSynthesisInLiveFile(filePath: string, synthesis: string, isPreliminary: boolean = false, customLabel?: string): void {
   let content = readFileSync(filePath, 'utf-8');
 
   const header = isPreliminary
-    ? '# Synthesis (preliminary—waiting for slow models...)'
+    ? `# Synthesis (${customLabel || 'preliminary—waiting for slow models...'})`
     : '# Synthesis';
 
   const synthesisSection = `${header}\n\n${synthesis}\n\n---\n\n`;
@@ -678,6 +741,7 @@ async function runQuery(
     image?: string;
     synthesise?: boolean;
     synthesisDepth?: string;
+    context?: string;
   }
 ): Promise<void> {
   const config = loadConfig();
@@ -686,6 +750,15 @@ async function runQuery(
   if (options.image && !existsSync(options.image)) {
     console.error(`Image file not found: ${options.image}`);
     process.exit(1);
+  }
+
+  // Load context if provided
+  let contextContent = '';
+  if (options.context) {
+    contextContent = readContext(options.context);
+    if (contextContent) {
+      console.log(`Loaded context from: ${options.context}`);
+    }
   }
 
   // Determine which models to query
@@ -728,64 +801,252 @@ async function runQuery(
     process.exit(1);
   }
 
-  // Check if there are any slow models
-  const hasSlowModels = modelNames.some(name => config.models[name]?.slow);
+  // Split models into tiers: quick/standard/slow vs deep research
+  const quickModels = getQuickModels(modelNames, config);
+  const deepResearchModels = getDeepResearchModels(modelNames, config);
+  const hasSlowModels = quickModels.some(name => config.models[name]?.slow);
+  const hasDeepResearch = deepResearchModels.length > 0;
   const depth = (options.synthesisDepth || 'executive') as 'brief' | 'executive' | 'full';
 
   // Track all results for final save
   let allResults: ModelResult[] = [];
+  let deepResearchResults: Map<string, DeepResearchResult> = new Map();
 
-  // Run queries with async callbacks for synthesis (only when there are slow models)
-  // When all models are fast, we handle synthesis after the query completes
-  const results = await queryModelsWithProgress({
-    modelNames,
-    prompt,
-    config,
-    defaultTimeoutSeconds: timeoutSeconds,
-    liveFilePath: options.liveFile,
-    imagePath: options.image,
+  // Prepend context to prompt if provided
+  const fullPrompt = contextContent
+    ? `${contextContent}\n## Question\n\n${prompt}`
+    : prompt;
 
-    // Callback when fast models complete - only used when there are slow models
-    // This provides a preliminary synthesis while waiting for slow models
-    onFastModelsComplete: hasSlowModels ? async (fastResults) => {
-      if (!options.synthesise || !options.liveFile) return;
+  // Create live file early if we have deep research models (to show progress)
+  if (options.liveFile && hasDeepResearch) {
+    const allModelsToShow = [...quickModels, ...deepResearchModels];
+    createLiveFile(options.liveFile, prompt, allModelsToShow, options.image);
+  }
 
-      const successfulResults = fastResults.filter(r => r.status === 'success');
-      if (successfulResults.length === 0) {
-        console.log('No successful fast model responses to synthesise.');
-        return;
+  // Start deep research queries in background (they run for 20-40 min)
+  const deepResearchPromises: Promise<void>[] = [];
+
+  // Track deep research progress for console output
+  const deepResearchStatus = new Map<string, { status: string; elapsedMs: number; lastUpdate: Date }>();
+
+  if (hasDeepResearch) {
+    console.log(`\nStarting ${deepResearchModels.length} deep research model(s) in background...`);
+
+    for (const modelName of deepResearchModels) {
+      const modelConfig = config.models[modelName];
+      deepResearchStatus.set(modelName, { status: 'starting', elapsedMs: 0, lastUpdate: new Date() });
+
+      const promise = (async () => {
+        const result = await queryDeepResearch({
+          prompt: fullPrompt,
+          context: contextContent,
+          modelConfig,
+          modelName,
+          onProgress: (progress) => {
+            // Update live file with progress
+            if (options.liveFile) {
+              updateDeepResearchProgress(options.liveFile, progress);
+            }
+            // Track progress for console output
+            deepResearchStatus.set(modelName, {
+              status: progress.status,
+              elapsedMs: progress.elapsedMs,
+              lastUpdate: new Date(),
+            });
+          },
+        });
+
+        deepResearchResults.set(modelName, result);
+
+        // Update live file with final result
+        if (options.liveFile) {
+          updateLiveFileWithDeepResearch(options.liveFile, modelName, result);
+        }
+
+        // Notify on completion
+        if (options.liveFile) {
+          notifyDeepResearchComplete(modelName, result.status, options.liveFile);
+        }
+      })();
+
+      deepResearchPromises.push(promise);
+    }
+  }
+
+  // Run quick/standard/slow model queries (if any)
+  let quickResults: ModelResult[] = [];
+
+  if (quickModels.length > 0) {
+    quickResults = await queryModelsWithProgress({
+      modelNames: quickModels,
+      prompt: fullPrompt,
+      config,
+      defaultTimeoutSeconds: timeoutSeconds,
+      liveFilePath: hasDeepResearch ? undefined : options.liveFile, // Only create if no deep research
+      imagePath: options.image,
+
+      // Callback when fast models complete
+      onFastModelsComplete: hasSlowModels ? async (fastResults) => {
+        if (!options.synthesise || !options.liveFile) return;
+
+        const successfulResults = fastResults.filter(r => r.status === 'success');
+        if (successfulResults.length === 0) {
+          console.log('No successful fast model responses to synthesise.');
+          return;
+        }
+
+        console.log(`\n=== Synthesising ${successfulResults.length} fast model responses ===\n`);
+        try {
+          const label = hasDeepResearch
+            ? 'preliminary—waiting for deep research...'
+            : 'preliminary—waiting for slow models...';
+          const synthesis = await performSynthesis(prompt, fastResults, depth);
+          updateSynthesisInLiveFile(options.liveFile, synthesis, true, label);
+        } catch (error) {
+          console.error('Preliminary synthesis failed:', error instanceof Error ? error.message : String(error));
+        }
+      } : undefined,
+
+      // Callback when all quick models complete
+      onAllModelsComplete: hasSlowModels ? async (allQuickResults) => {
+        if (!options.synthesise || !options.liveFile) return;
+
+        // If there's deep research, mark synthesis as preliminary
+        if (hasDeepResearch) {
+          const successfulResults = allQuickResults.filter(r => r.status === 'success');
+          if (successfulResults.length > 0) {
+            console.log(`\n=== Synthesising ${successfulResults.length} quick model responses (deep research in progress) ===\n`);
+            try {
+              const synthesis = await performSynthesis(prompt, allQuickResults, depth);
+              updateSynthesisInLiveFile(options.liveFile, synthesis, true, 'preliminary—waiting for deep research...');
+            } catch (error) {
+              console.error('Synthesis failed:', error instanceof Error ? error.message : String(error));
+            }
+          }
+        } else {
+          // No deep research, this is the final synthesis
+          const successfulResults = allQuickResults.filter(r => r.status === 'success');
+          if (successfulResults.length > 0) {
+            console.log(`\n=== Final synthesis with all ${successfulResults.length} responses ===\n`);
+            try {
+              const synthesis = await performSynthesis(prompt, allQuickResults, depth);
+              updateSynthesisInLiveFile(options.liveFile, synthesis, false);
+            } catch (error) {
+              console.error('Final synthesis failed:', error instanceof Error ? error.message : String(error));
+            }
+          }
+        }
+      } : undefined,
+    });
+
+    // Update live file with quick results if we created it earlier for deep research
+    if (hasDeepResearch && options.liveFile) {
+      for (const result of quickResults) {
+        updateLiveFile(options.liveFile, result.model, result);
       }
+    }
+  }
 
-      console.log(`\n=== Synthesising ${successfulResults.length} fast model responses ===\n`);
+  // Run synthesis for quick models if no slow models and no callbacks fired
+  if (options.synthesise && options.liveFile && quickModels.length > 0 && !hasSlowModels) {
+    const successfulResults = quickResults.filter(r => r.status === 'success');
+    if (successfulResults.length > 0) {
       try {
-        const synthesis = await performSynthesis(prompt, fastResults, depth);
-        updateSynthesisInLiveFile(options.liveFile, synthesis, true);
+        const isPreliminary = hasDeepResearch;
+        const label = hasDeepResearch ? 'preliminary—waiting for deep research...' : undefined;
+        const synthesis = await performSynthesis(prompt, quickResults, depth, !hasDeepResearch);
+        updateSynthesisInLiveFile(options.liveFile, synthesis, isPreliminary, label);
       } catch (error) {
-        console.error('Preliminary synthesis failed:', error instanceof Error ? error.message : String(error));
+        console.error('Synthesis failed, skipping...');
       }
-    } : undefined,
+    }
+  }
 
-    // Callback when all models (including slow) complete - only used when there are slow models
-    onAllModelsComplete: hasSlowModels ? async (allResultsFromQuery) => {
-      if (!options.synthesise || !options.liveFile) return;
+  // Add quick results to allResults
+  allResults.push(...quickResults);
 
-      const successfulResults = allResultsFromQuery.filter(r => r.status === 'success');
-      if (successfulResults.length === 0) {
-        console.log('No successful responses to synthesise.');
-        return;
+  // Wait for deep research to complete (this can take 20-40 min)
+  if (deepResearchPromises.length > 0) {
+    console.log('\nWaiting for deep research to complete (this may take 20-40 minutes)...');
+    console.log('Quick model results are already available in the live file.\n');
+
+    // Animated progress display (only if TTY)
+    const isTTY = process.stdout.isTTY;
+    const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+    let frameIndex = 0;
+    let lastPrintedLines = 0;
+
+    const printProgress = () => {
+      frameIndex = (frameIndex + 1) % spinnerFrames.length;
+      const spinner = spinnerFrames[frameIndex];
+      const now = new Date();
+
+      // Build status line for each model
+      const statusLines: string[] = [];
+      for (const [model, info] of deepResearchStatus) {
+        const elapsedSec = Math.floor(info.elapsedMs / 1000);
+        const mins = Math.floor(elapsedSec / 60);
+        const secs = elapsedSec % 60;
+        const elapsedStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+        const statusIcon = info.status === 'completed' ? '✓' :
+                          info.status === 'failed' ? '✗' : spinner;
+
+        const lastCheckAgo = Math.floor((now.getTime() - info.lastUpdate.getTime()) / 1000);
+        const checkStr = lastCheckAgo < 5 ? '' : ` (checked ${lastCheckAgo}s ago)`;
+
+        statusLines.push(`  ${statusIcon} ${model}: ${info.status} (${elapsedStr})${checkStr}`);
       }
 
-      console.log(`\n=== Final synthesis with all ${successfulResults.length} responses ===\n`);
-      try {
-        const synthesis = await performSynthesis(prompt, allResultsFromQuery, depth);
-        updateSynthesisInLiveFile(options.liveFile, synthesis, false);
-      } catch (error) {
-        console.error('Final synthesis failed:', error instanceof Error ? error.message : String(error));
+      if (isTTY && lastPrintedLines > 0) {
+        // Clear previous lines and print new status
+        process.stdout.write('\x1b[' + lastPrintedLines + 'A'); // Move cursor up
+        process.stdout.write('\x1b[J'); // Clear from cursor to end
       }
-    } : undefined,
-  });
+      console.log(statusLines.join('\n'));
+      lastPrintedLines = statusLines.length;
+    };
 
-  allResults = results;
+    // Print initial status
+    printProgress();
+
+    // Update every 500ms for animation, or every 10s for non-TTY
+    const updateInterval = isTTY ? 500 : 10000;
+    const progressInterval = setInterval(printProgress, updateInterval);
+
+    await Promise.all(deepResearchPromises);
+    clearInterval(progressInterval);
+
+    // Print final status
+    printProgress();
+    console.log('\nDeep research complete!\n');
+
+    // Convert deep research results to ModelResult format and add to allResults
+    for (const [modelName, result] of deepResearchResults) {
+      const modelResult: ModelResult = {
+        model: modelName,
+        status: result.status,
+        response: result.response ? formatDeepResearchResponse(result) : undefined,
+        error: result.error,
+        latencyMs: result.latencyMs,
+      };
+      allResults.push(modelResult);
+    }
+
+    // Final synthesis with all results including deep research
+    if (options.synthesise && options.liveFile) {
+      const successfulResults = allResults.filter(r => r.status === 'success');
+      if (successfulResults.length > 0) {
+        console.log(`\n=== Final synthesis including deep research (${successfulResults.length} responses) ===\n`);
+        try {
+          const synthesis = await performSynthesis(prompt, allResults, depth);
+          updateSynthesisInLiveFile(options.liveFile, synthesis, false);
+        } catch (error) {
+          console.error('Final synthesis failed:', error instanceof Error ? error.message : String(error));
+        }
+      }
+    }
+  }
 
   // Save results
   if (!options.noSave) {
@@ -795,22 +1056,6 @@ async function runQuery(
 
   // Print summary
   printSummary(allResults);
-
-  // Run synthesis if not already done via callbacks (no slow models case)
-  // Use fast model (Gemini Flash) for quick queries
-  if (options.synthesise && options.liveFile && !hasSlowModels) {
-    const successfulResults = allResults.filter(r => r.status === 'success');
-    if (successfulResults.length > 0) {
-      try {
-        const synthesis = await performSynthesis(prompt, allResults, depth, true);
-        updateSynthesisInLiveFile(options.liveFile, synthesis, false);
-      } catch (error) {
-        console.error('Synthesis failed, skipping...');
-      }
-    } else {
-      console.log('\nNo successful responses to synthesise.');
-    }
-  }
 }
 
 // CLI setup
@@ -829,6 +1074,7 @@ program
   .option('-o, --output <dir>', 'Output directory for responses')
   .option('-l, --live-file <path>', 'Markdown file to update live as responses arrive')
   .option('-i, --image <path>', 'Image file to include with the prompt (vision models only)')
+  .option('-c, --context <path>', 'Context file or folder to include with the prompt')
   .option('--no-save', 'Do not save responses to disk')
   .option('-s, --synthesise', 'Run automatic synthesis after queries complete')
   .option('--synthesis-depth <level>', 'Synthesis depth: brief, executive, full', 'executive')

@@ -13,11 +13,26 @@
 
 set -euo pipefail
 
+# Handle Ctrl+C gracefully
+trap 'echo ""; echo "Cancelled."; exit 130' INT
+
+SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Check if setup is complete
+SETUP_STATE="$SKILL_DIR/data/setup-state.json"
+if [[ ! -f "$SETUP_STATE" ]] || [[ "$(jq -r '.setup_complete' "$SETUP_STATE" 2>/dev/null)" != "true" ]]; then
+    "$SKILL_DIR/bin/amm-setup"
+    # After setup, check if it completed successfully
+    if [[ "$(jq -r '.setup_complete' "$SETUP_STATE" 2>/dev/null)" != "true" ]]; then
+        echo "Setup incomplete. Run 'amm' again to continue setup."
+        exit 1
+    fi
+fi
+
 # Load nvm for node/yarn access
 export NVM_DIR="$HOME/.nvm"
 [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
 
-SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CONFIG_FILE="$SKILL_DIR/config.json"
 DEFAULTS_FILE="$SKILL_DIR/data/user-defaults.json"
 RESPONSES_DIR="$SKILL_DIR/multi-model-responses"
@@ -64,6 +79,8 @@ DEFAULT_MODELS_CSV=$(echo "$DEFAULT_MODELS" | tr '\n' ',' | sed 's/,$//')
 # Get preset info
 QUICK_MODELS=$(jq -r '.presets.quick.models | join(",")' "$CONFIG_FILE")
 COMPREHENSIVE_MODELS=$(jq -r '.presets.comprehensive.models | join(",")' "$CONFIG_FILE")
+DEEP_RESEARCH_MODELS=$(jq -r '.presets["deep-research"].models | join(",")' "$CONFIG_FILE")
+COMPREHENSIVE_DEEP_MODELS=$(jq -r '.presets["comprehensive-deep"].models | join(",")' "$CONFIG_FILE")
 
 # Read all available API models from config.json (exclude browser models)
 ALL_MODELS=$(jq -r '.models | to_entries | map(select(.value.type == "api")) | .[].key' "$CONFIG_FILE")
@@ -88,6 +105,8 @@ else
         "⚡ Defaults ($DEFAULT_MODELS_CSV)"
         "🚀 Quick ($QUICK_MODELS)"
         "📊 Comprehensive (all default models + GPT 5.2 Pro)"
+        "🔬 Deep Research (20-40 min)"
+        "💫 Comprehensive + Deep Research"
         "🔧 Pick individual models..."
     )
 
@@ -100,8 +119,14 @@ else
         MODELS_CSV="$DEFAULT_MODELS_CSV"
     elif [[ "$SELECTION" == "🚀 Quick"* ]]; then
         MODELS_CSV="$QUICK_MODELS"
-    elif [[ "$SELECTION" == "📊 Comprehensive"* ]]; then
+    elif [[ "$SELECTION" == "📊 Comprehensive (all"* ]]; then
         MODELS_CSV="$COMPREHENSIVE_MODELS"
+    elif [[ "$SELECTION" == "🔬 Deep Research"* ]]; then
+        MODELS_CSV="$DEEP_RESEARCH_MODELS"
+        IS_DEEP_RESEARCH=true
+    elif [[ "$SELECTION" == "💫 Comprehensive"* ]]; then
+        MODELS_CSV="$COMPREHENSIVE_DEEP_MODELS"
+        IS_DEEP_RESEARCH=true
     elif [[ "$SELECTION" == "🔧 Pick"* ]]; then
         # Show individual models with multi-select
         echo ""
@@ -114,6 +139,122 @@ else
             MODELS_CSV="$DEFAULT_MODELS_CSV"
         else
             MODELS_CSV=$(echo "$MODEL_SELECTIONS" | tr '\n' ',' | sed 's/,$//')
+            # Check if any selected models are deep research
+            if echo "$MODEL_SELECTIONS" | grep -q "deep-research"; then
+                IS_DEEP_RESEARCH=true
+            fi
+        fi
+    fi
+fi
+
+# Deep research handling: show warning and context picker
+CONTEXT_FILE=""
+CONTEXT_FILES=()
+CONTEXT_DESCRIPTIONS=()
+if [[ "${IS_DEEP_RESEARCH:-false}" == "true" ]]; then
+    echo ""
+    gum style --foreground 214 --bold "⚠️  Deep Research Mode"
+    echo "Deep research models take 20-40 minutes per model."
+    echo "Quick models will return results in ~30 seconds."
+
+    # Loop for adding multiple context sources
+    while true; do
+        echo ""
+
+        # Show accumulated context if any
+        if [[ ${#CONTEXT_DESCRIPTIONS[@]} -gt 0 ]]; then
+            gum style --foreground 82 "Context added:"
+            for desc in "${CONTEXT_DESCRIPTIONS[@]}"; do
+                echo "  ✓ $desc"
+            done
+            echo ""
+        fi
+
+        gum style --foreground 212 "Would you like to add context?"
+        echo ""
+
+        ADD_CONTEXT=$(gum choose --height=7 \
+            "No, continue" \
+            "Browse files (from home)" \
+            "Paste or drag file path" \
+            "Paste text directly" \
+            "Search")
+
+        case "$ADD_CONTEXT" in
+            "No, continue"*)
+                break
+                ;;
+            "Browse files"*)
+                echo ""
+                echo "Select a file or folder:"
+                gum style --faint "  → to open folder | Enter to select | Esc to cancel"
+                SELECTED=$(gum file --directory --file --height=15 "$HOME" || true)
+                if [[ -n "$SELECTED" && -e "$SELECTED" ]]; then
+                    CONTEXT_FILES+=("$SELECTED")
+                    CONTEXT_DESCRIPTIONS+=("$SELECTED")
+                fi
+                ;;
+            "Paste or drag"*)
+                echo ""
+                SELECTED=$(gum input --placeholder "Paste path or drag file here..." --width=80 || true)
+                # Expand ~ to home directory
+                SELECTED="${SELECTED/#\~/$HOME}"
+                if [[ -n "$SELECTED" && -e "$SELECTED" ]]; then
+                    CONTEXT_FILES+=("$SELECTED")
+                    CONTEXT_DESCRIPTIONS+=("$SELECTED")
+                elif [[ -n "$SELECTED" ]]; then
+                    gum style --foreground 196 "File not found: $SELECTED"
+                fi
+                ;;
+            "Paste text"*)
+                echo ""
+                echo "Paste your context text:"
+                gum style --faint "  Paste with Cmd+V | Press Ctrl+D or Esc when done"
+                PASTED_TEXT=$(gum write --placeholder "Paste context here..." --width=80 --height=10 || true)
+                if [[ -n "$PASTED_TEXT" ]]; then
+                    # Save to temp file (use $TMPDIR for macOS compatibility)
+                    TEMP_FILE=$(mktemp "${TMPDIR:-/tmp}/amm-context-XXXXXX")
+                    echo "$PASTED_TEXT" > "$TEMP_FILE"
+                    CONTEXT_FILES+=("$TEMP_FILE")
+                    CONTEXT_DESCRIPTIONS+=("Pasted text (${#PASTED_TEXT} chars)")
+                fi
+                ;;
+            "Search")
+                if command -v fzf &> /dev/null; then
+                    echo ""
+                    echo "Searching files (type to filter, Enter to select, Esc to cancel):"
+                    SELECTED=$(find "$HOME" -type f \( -name "*.md" -o -name "*.txt" -o -name "*.pdf" \) 2>/dev/null | fzf --height=15 --preview 'head -20 {}' || true)
+                    if [[ -n "$SELECTED" && -e "$SELECTED" ]]; then
+                        CONTEXT_FILES+=("$SELECTED")
+                        CONTEXT_DESCRIPTIONS+=("$SELECTED")
+                    fi
+                else
+                    echo ""
+                    gum style --foreground 214 "Search requires 'fzf'. Install with: brew install fzf"
+                    echo "Falling back to file browser..."
+                    gum style --faint "  → to open folder | Enter to select | Esc to cancel"
+                    SELECTED=$(gum file --directory --file --height=15 "$HOME" || true)
+                    if [[ -n "$SELECTED" && -e "$SELECTED" ]]; then
+                        CONTEXT_FILES+=("$SELECTED")
+                        CONTEXT_DESCRIPTIONS+=("$SELECTED")
+                    fi
+                fi
+                ;;
+        esac
+    done
+
+    # Combine all context files into one if multiple were added
+    if [[ ${#CONTEXT_FILES[@]} -gt 0 ]]; then
+        if [[ ${#CONTEXT_FILES[@]} -eq 1 ]]; then
+            CONTEXT_FILE="${CONTEXT_FILES[0]}"
+        else
+            # Merge multiple context files
+            CONTEXT_FILE=$(mktemp "${TMPDIR:-/tmp}/amm-context-merged-XXXXXX")
+            for cf in "${CONTEXT_FILES[@]}"; do
+                echo "--- From: $cf ---" >> "$CONTEXT_FILE"
+                cat "$cf" >> "$CONTEXT_FILE"
+                echo "" >> "$CONTEXT_FILE"
+            done
         fi
     fi
 fi
@@ -138,6 +279,11 @@ QUERY_ARGS=(
 
 if [[ "$SYNTHESISE" == "true" ]]; then
     QUERY_ARGS+=(--synthesise)
+fi
+
+# Add context file if specified
+if [[ -n "$CONTEXT_FILE" ]]; then
+    QUERY_ARGS+=(--context "$CONTEXT_FILE")
 fi
 
 # Add prompt as the final argument (preserves quotes and special chars)

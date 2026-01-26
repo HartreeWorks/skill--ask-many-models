@@ -62,8 +62,8 @@ export function notify(options: NotifyOptions): boolean {
   try {
     execSync(`terminal-notifier ${args.join(' ')}`, { stdio: 'ignore' });
     return true;
-  } catch (error) {
-    console.error('Failed to send notification:', error);
+  } catch {
+    // Notifications are non-critical - fail silently
     return false;
   }
 }
@@ -126,5 +126,42 @@ export function notifyError(title: string, message: string): void {
     subtitle: title,
     sound: 'Basso',
     group: 'ask-many-models-error',
+  });
+}
+
+/**
+ * Send notification when deep research starts
+ */
+export function notifyDeepResearchStarted(models: string[]): void {
+  notify({
+    title: 'Ask Many Models',
+    message: `Starting ${models.length} deep research model(s)`,
+    subtitle: 'This will take 20-40 minutes',
+    sound: 'default',
+    group: 'ask-many-models-deep-research',
+  });
+}
+
+/**
+ * Send notification when deep research completes
+ */
+export function notifyDeepResearchComplete(
+  model: string,
+  status: 'success' | 'error' | 'timeout',
+  outputPath: string
+): void {
+  const statusMessage = status === 'success'
+    ? 'completed successfully'
+    : status === 'timeout'
+    ? 'timed out'
+    : 'failed';
+
+  notify({
+    title: 'Ask Many Models - Deep Research',
+    message: `${model} ${statusMessage}`,
+    subtitle: 'Click to view results',
+    sound: status === 'success' ? 'default' : 'Basso',
+    open: outputPath,
+    group: `ask-many-models-deep-${model}`,
   });
 }
