@@ -5,7 +5,7 @@
 import { openai } from '@ai-sdk/openai';
 import { google } from '@ai-sdk/google';
 import { xai } from '@ai-sdk/xai';
-import { anthropic } from '@ai-sdk/anthropic';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import type { LanguageModel } from 'ai';
 
 export interface ModelConfig {
@@ -68,8 +68,12 @@ export function createModel(modelName: string, config: Config): LanguageModel | 
       return google(modelConfig.model_id);
     case 'xai':
       return xai(modelConfig.model_id);
-    case 'anthropic':
-      return anthropic(modelConfig.model_id);
+    case 'anthropic': {
+      const anthropicProvider = createAnthropic({
+        baseURL: 'https://api.anthropic.com/v1',
+      });
+      return anthropicProvider(modelConfig.model_id);
+    }
     case 'openai-deep':
     case 'gemini-deep':
       // Deep research models are handled separately, not via Vercel AI SDK

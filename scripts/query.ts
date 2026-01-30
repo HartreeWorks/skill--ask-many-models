@@ -8,15 +8,17 @@
  *   yarn query --models gpt-4o,gemini-2.0-flash "Your question"
  */
 
-import 'dotenv/config';
+import { config as dotenvConfig } from 'dotenv';
+dotenvConfig({ override: true });
 import { program } from 'commander';
 import { generateText } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname, basename, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { EventEmitter } from 'events';
+import { marked } from 'marked';
 import {
   createModel,
   getPresetModels,
@@ -350,6 +352,169 @@ function normaliseHeadings(text: string): string {
   return text.replace(/^# /gm, '## ');
 }
 
+type OutputFormat = 'markdown' | 'html' | 'both';
+
+function getHtmlPath(mdPath: string): string {
+  return mdPath.replace(/\.md$/, '.html');
+}
+
+function generateHtmlFromMarkdown(mdContent: string): string {
+  const body = marked.parse(mdContent, { async: false }) as string;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Model Query</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Charter', 'Bitstream Charter', 'Sitka Text', Cambria, serif;
+    font-size: 18px;
+    line-height: 1.7;
+    color: #1a1a1a;
+    background: #fafaf8;
+    padding: 3rem 1.5rem;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 3rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e0ddd8;
+    color: #111;
+  }
+
+  h1:first-child { margin-top: 0; }
+
+  h2 {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin: 2rem 0 0.75rem;
+    color: #222;
+  }
+
+  h3 {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.5rem;
+    color: #333;
+  }
+
+  p { margin: 0 0 1rem; }
+
+  strong { font-weight: 700; }
+
+  em { color: #555; }
+
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  hr {
+    border: none;
+    border-top: 1px solid #e0ddd8;
+    margin: 2rem 0;
+  }
+
+  ul, ol {
+    margin: 0 0 1rem;
+    padding-left: 1.5rem;
+  }
+
+  li { margin-bottom: 0.35rem; }
+
+  li > ul, li > ol { margin-top: 0.35rem; margin-bottom: 0; }
+
+  blockquote {
+    border-left: 3px solid #d0cdc6;
+    padding: 0.5rem 0 0.5rem 1.25rem;
+    margin: 0 0 1rem;
+    color: #555;
+    font-style: italic;
+  }
+
+  pre {
+    background: #f4f3f0;
+    border: 1px solid #e0ddd8;
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    margin: 0 0 1rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
+    font-size: 0.88em;
+  }
+
+  :not(pre) > code {
+    background: #f4f3f0;
+    padding: 0.15em 0.35em;
+    border-radius: 3px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 1rem;
+    font-size: 0.95rem;
+  }
+
+  th, td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e0ddd8;
+  }
+
+  th {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #666;
+  }
+
+  @media (max-width: 600px) {
+    body { font-size: 16px; padding: 1.5rem 1rem; }
+    h1 { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+${body}
+</div>
+</body>
+</html>`;
+}
+
+function syncHtmlFile(mdPath: string, outputFormat: OutputFormat): void {
+  if (outputFormat === 'markdown') return;
+  try {
+    const mdContent = readFileSync(mdPath, 'utf-8');
+    const html = generateHtmlFromMarkdown(mdContent);
+    writeFileSync(getHtmlPath(mdPath), html);
+  } catch {
+    // Silently skip if markdown file doesn't exist yet
+  }
+}
+
 // Create initial live markdown file with model headings
 // Count words in a string
 function countWords(text: string): number {
@@ -446,6 +611,7 @@ interface QueryModelsOptions {
   liveFilePath?: string;
   imagePath?: string;
   contextPaths?: string[];
+  outputFormat?: OutputFormat;
   onFastModelsComplete?: (results: ModelResult[]) => Promise<void>;
   onAllModelsComplete?: (results: ModelResult[]) => Promise<void>;
 }
@@ -459,6 +625,7 @@ async function queryModelsWithProgress(options: QueryModelsOptions): Promise<Mod
     liveFilePath,
     imagePath,
     contextPaths,
+    outputFormat = 'markdown',
     onFastModelsComplete,
     onAllModelsComplete,
   } = options;
@@ -505,6 +672,7 @@ async function queryModelsWithProgress(options: QueryModelsOptions): Promise<Mod
     // Update live file immediately
     if (liveFilePath) {
       updateLiveFile(liveFilePath, modelName, result);
+      syncHtmlFile(liveFilePath, outputFormat);
     }
 
     // Check if all fast models are complete
@@ -637,7 +805,7 @@ async function performSynthesis(
 
     try {
       const result = await generateText({
-        model: anthropic('claude-opus-4-5-20251101'),
+        model: createAnthropic({ baseURL: 'https://api.anthropic.com/v1' })('claude-opus-4-5-20251101'),
         prompt: synthesisPrompt,
         maxOutputTokens: 16000,
         providerOptions: {
@@ -787,9 +955,11 @@ async function runQuery(
     synthesise?: boolean;
     synthesisDepth?: string;
     context?: string;
+    outputFormat?: string;
   }
 ): Promise<void> {
   const config = loadConfig();
+  const outputFormat = (options.outputFormat || 'markdown') as OutputFormat;
 
   // Validate image if provided
   if (options.image && !existsSync(options.image)) {
@@ -933,6 +1103,7 @@ async function runQuery(
       defaultTimeoutSeconds: timeoutSeconds,
       liveFilePath: hasDeepResearch ? undefined : options.liveFile, // Only create if no deep research
       imagePath: options.image,
+      outputFormat,
       contextPaths,
 
       // Callback when fast models complete
@@ -952,6 +1123,7 @@ async function runQuery(
             : 'preliminary—waiting for slow models...';
           const synthesis = await performSynthesis(prompt, fastResults, depth);
           updateSynthesisInLiveFile(options.liveFile, synthesis, true, label);
+          syncHtmlFile(options.liveFile, outputFormat);
         } catch (error) {
           console.error('Preliminary synthesis failed:', error instanceof Error ? error.message : String(error));
         }
@@ -1107,6 +1279,11 @@ async function runQuery(
     saveResults(outputDir, prompt, allResults);
   }
 
+  // Final HTML sync
+  if (options.liveFile) {
+    syncHtmlFile(options.liveFile, outputFormat);
+  }
+
   // Print summary
   printSummary(allResults);
 }
@@ -1131,6 +1308,7 @@ program
   .option('--no-save', 'Do not save responses to disk')
   .option('-s, --synthesise', 'Run automatic synthesis after queries complete')
   .option('--synthesis-depth <level>', 'Synthesis depth: brief, executive, full', 'executive')
+  .option('--output-format <format>', 'Output format: markdown, html, both', 'markdown')
   .action(runQuery);
 
 program

@@ -4,7 +4,8 @@
  * Returns JSON with validation results for each provider
  */
 
-import 'dotenv/config';
+import { config as dotenvConfig } from 'dotenv';
+dotenvConfig({ override: true });
 
 interface ValidationResult {
   provider: string;

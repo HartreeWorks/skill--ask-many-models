@@ -37,6 +37,21 @@ CONFIG_FILE="$SKILL_DIR/config.json"
 DEFAULTS_FILE="$SKILL_DIR/data/user-defaults.json"
 RESPONSES_DIR="$SKILL_DIR/multi-model-responses"
 
+# Check output format preference
+OUTPUT_FORMAT=$(jq -r '.output_format // empty' "$DEFAULTS_FILE" 2>/dev/null)
+if [[ -z "$OUTPUT_FORMAT" ]]; then
+    echo ""
+    gum style --foreground 212 "Output format preference"
+    echo "How would you like to view results?"
+    echo ""
+    OUTPUT_FORMAT=$(gum choose "both (Recommended)" "html" "markdown")
+    OUTPUT_FORMAT="${OUTPUT_FORMAT%% *}"  # Strip " (Recommended)" suffix
+    # Save to user-defaults.json
+    jq --arg fmt "$OUTPUT_FORMAT" '.output_format = $fmt' "$DEFAULTS_FILE" > "$DEFAULTS_FILE.tmp" && mv "$DEFAULTS_FILE.tmp" "$DEFAULTS_FILE"
+    echo "Saved preference: $OUTPUT_FORMAT"
+    echo ""
+fi
+
 # Parse arguments
 SYNTHESISE=true
 SKIP_SELECT=false
@@ -317,6 +332,9 @@ if [[ "$SYNTHESISE" == "true" ]]; then
     QUERY_ARGS+=(--synthesise)
 fi
 
+# Add output format
+QUERY_ARGS+=(--output-format "$OUTPUT_FORMAT")
+
 # Add context file if specified
 if [[ -n "$CONTEXT_FILE" ]]; then
     QUERY_ARGS+=(--context "$CONTEXT_FILE")
@@ -328,7 +346,13 @@ QUERY_ARGS+=("$PROMPT")
 # Run the query
 yarn "${QUERY_ARGS[@]}"
 
-# Open the file
+# Open the appropriate file(s)
 echo ""
 echo "Opening results..."
-open "$LIVE_FILE"
+HTML_FILE="${LIVE_FILE%.md}.html"
+if [[ "$OUTPUT_FORMAT" == "html" || "$OUTPUT_FORMAT" == "both" ]]; then
+    open "$HTML_FILE"
+fi
+if [[ "$OUTPUT_FORMAT" == "markdown" || "$OUTPUT_FORMAT" == "both" ]]; then
+    open "$LIVE_FILE"
+fi

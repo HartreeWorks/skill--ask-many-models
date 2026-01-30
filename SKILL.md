@@ -70,6 +70,7 @@ cd /Users/ph/.claude/skills/ask-many-models && yarn query \
   --models "<model-ids>" \
   --live-file "/Users/ph/.claude/skills/ask-many-models/multi-model-responses/$(date +%Y-%m-%d-%H%M)-<slug>.md" \
   --synthesise \
+  --output-format both \
   [--image "<path>"] \
   "<prompt>"
 ```
@@ -95,6 +96,14 @@ Options:
 - `--no-synthesise` - Skip the synthesis step
 
 **Default models** are configured in `data/user-defaults.json`.
+
+### Output format
+
+Results can be output as markdown, HTML, or both. The preference is stored in `data/user-defaults.json` under `output_format`. On first run via `amm`, you'll be prompted to choose. The HTML version uses serif typography optimised for long-form reading.
+
+- `--output-format markdown` — markdown only (default for script invocation)
+- `--output-format html` — HTML only
+- `--output-format both` — both markdown and HTML
 
 ### Image Support
 
