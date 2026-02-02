@@ -90,7 +90,9 @@ cd /Users/ph/.claude/skills/ask-many-models && yarn query \
 
 1. Say: "Querying: [model list]"
 2. Give the absolute path to the live markdown file
-3. Open it: `open "<live-file-path>"`
+3. Open it based on `open_preference` in `data/user-defaults.json`:
+   - `"html"` → `open "<live-file-path with .md replaced by .html>"`
+   - `"markdown"` (or absent) → `open "<live-file-path>"`
 
 The `--synthesise` flag runs Claude Opus 4.5 with extended thinking to synthesise responses automatically.
 

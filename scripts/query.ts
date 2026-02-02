@@ -394,8 +394,9 @@ function getHtmlPath(mdPath: string): string {
   return mdPath.replace(/\.md$/, '.html');
 }
 
-function generateHtmlFromMarkdown(mdContent: string): string {
+function generateHtmlFromMarkdown(mdContent: string, mdFilePath?: string): string {
   const body = marked.parse(mdContent, { async: false }) as string;
+  const mdLink = mdFilePath ? `<div class="source-link"><a href="file://${mdFilePath}">Open markdown source</a></div>` : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -554,6 +555,10 @@ function generateHtmlFromMarkdown(mdContent: string): string {
   }
   @media (min-width: 861px) { .toc-toggle { display: none; } }
 
+  .source-link { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+  .source-link a { color: var(--text-muted); text-decoration: none; border-bottom: 1px solid var(--border); }
+  .source-link a:hover { color: var(--accent); border-color: var(--accent); }
+
   h1[id] { scroll-margin-top: 1rem; }
   @media (max-width: 860px) { h1[id] { scroll-margin-top: 3.5rem; } }
 </style>
@@ -566,6 +571,7 @@ function generateHtmlFromMarkdown(mdContent: string): string {
     <ul id="toc-list"></ul>
   </nav>
   <div class="content">
+    ${mdLink}
     ${body}
   </div>
 </div>
@@ -612,7 +618,7 @@ function syncHtmlFile(mdPath: string, outputFormat: OutputFormat): void {
   if (outputFormat === 'markdown') return;
   try {
     const mdContent = readFileSync(mdPath, 'utf-8');
-    const html = generateHtmlFromMarkdown(mdContent);
+    const html = generateHtmlFromMarkdown(mdContent, mdPath);
     writeFileSync(getHtmlPath(mdPath), html);
   } catch {
     // Silently skip if markdown file doesn't exist yet

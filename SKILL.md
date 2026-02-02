@@ -77,7 +77,9 @@ cd /Users/ph/.claude/skills/ask-many-models && yarn query \
 
 #### Step 5: Open results
 
-Say "Querying: [models]" and open the live file: `open "<live-file-path>"`
+Say "Querying: [models]" and open the live file. Check `data/user-defaults.json` for `open_preference`:
+- `"html"` → `open "<live-file-path with .md replaced by .html>"`
+- `"markdown"` (or absent) → `open "<live-file-path>"`
 
 ---
 
