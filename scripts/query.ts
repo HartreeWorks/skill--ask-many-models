@@ -406,101 +406,185 @@ function generateHtmlFromMarkdown(mdContent: string): string {
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+  :root {
+    --serif: 'Palatino Linotype', Palatino, 'Book Antiqua', 'Georgia', serif;
+    --mono: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
+    --bg: #fcfbf9;
+    --bg-sidebar: #f5f3ef;
+    --text: #2a2520;
+    --text-muted: #6b6560;
+    --border: #ddd8d0;
+    --accent: #8b4513;
+    --accent-light: #a0522d;
+    --link: #6b3a1f;
+    --sidebar-w: 240px;
+  }
+
   body {
-    font-family: 'Charter', 'Bitstream Charter', 'Sitka Text', Cambria, serif;
-    font-size: 18px;
-    line-height: 1.7;
-    color: #1a1a1a;
-    background: #fafaf8;
-    padding: 3rem 1.5rem;
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.75;
+    color: var(--text);
+    background: var(--bg);
     -webkit-font-smoothing: antialiased;
   }
 
-  .container {
-    max-width: 680px;
-    margin: 0 auto;
+  /* Layout: sidebar + content */
+  .layout {
+    display: flex;
+    min-height: 100vh;
   }
 
-  h1 {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 1.8rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin: 3rem 0 1rem;
+  nav.toc {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    overflow-y: auto;
+    padding: 2rem 1.25rem;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    z-index: 10;
+  }
+
+  nav.toc .toc-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid #e0ddd8;
-    color: #111;
+    border-bottom: 1px solid var(--border);
+  }
+
+  nav.toc ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  nav.toc li { margin-bottom: 0.15rem; }
+
+  nav.toc a {
+    display: block;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  nav.toc a:hover {
+    color: var(--text);
+    background: rgba(0,0,0,0.04);
+  }
+
+  nav.toc a.active {
+    color: var(--accent);
+    background: rgba(139,69,19,0.06);
+    font-weight: 600;
+  }
+
+  .content {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    max-width: 720px;
+    padding: 3rem 2.5rem 4rem;
+  }
+
+  /* Typography */
+  h1 {
+    font-family: var(--serif);
+    font-size: 1.65rem;
+    font-weight: 700;
+    font-style: italic;
+    letter-spacing: -0.01em;
+    margin: 3.5rem 0 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--accent);
   }
 
   h1:first-child { margin-top: 0; }
 
   h2 {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 1.35rem;
-    font-weight: 600;
-    margin: 2rem 0 0.75rem;
-    color: #222;
+    font-family: var(--serif);
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 2rem 0 0.6rem;
+    color: var(--text);
   }
 
   h3 {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin: 1.5rem 0 0.5rem;
-    color: #333;
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 1.5rem 0 0.4rem;
+    color: var(--text);
+  }
+
+  h4 {
+    font-family: var(--serif);
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 1.25rem 0 0.35rem;
+    color: var(--text-muted);
   }
 
   p { margin: 0 0 1rem; }
 
   strong { font-weight: 700; }
 
-  em { color: #555; }
+  em { color: var(--text-muted); }
 
-  a { color: #2563eb; text-decoration: none; }
-  a:hover { text-decoration: underline; }
+  a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(107,58,31,0.3); text-underline-offset: 2px; }
+  a:hover { text-decoration-color: var(--link); }
 
   hr {
     border: none;
-    border-top: 1px solid #e0ddd8;
+    border-top: 1px solid var(--border);
     margin: 2rem 0;
   }
 
   ul, ol {
     margin: 0 0 1rem;
-    padding-left: 1.5rem;
+    padding-left: 1.4rem;
   }
 
-  li { margin-bottom: 0.35rem; }
-
-  li > ul, li > ol { margin-top: 0.35rem; margin-bottom: 0; }
+  li { margin-bottom: 0.3rem; }
+  li > ul, li > ol { margin-top: 0.3rem; margin-bottom: 0; }
 
   blockquote {
-    border-left: 3px solid #d0cdc6;
-    padding: 0.5rem 0 0.5rem 1.25rem;
+    border-left: 2px solid var(--accent);
+    padding: 0.4rem 0 0.4rem 1.25rem;
     margin: 0 0 1rem;
-    color: #555;
+    color: var(--text-muted);
     font-style: italic;
   }
 
   pre {
-    background: #f4f3f0;
-    border: 1px solid #e0ddd8;
-    border-radius: 6px;
+    background: #f0ede8;
+    border: 1px solid var(--border);
+    border-radius: 4px;
     padding: 1rem 1.25rem;
     overflow-x: auto;
     margin: 0 0 1rem;
-    font-size: 0.85rem;
-    line-height: 1.5;
+    font-size: 0.82rem;
+    line-height: 1.55;
   }
 
   code {
-    font-family: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
-    font-size: 0.88em;
+    font-family: var(--mono);
+    font-size: 0.85em;
   }
 
   :not(pre) > code {
-    background: #f4f3f0;
-    padding: 0.15em 0.35em;
+    background: #eeebe5;
+    padding: 0.12em 0.35em;
     border-radius: 3px;
   }
 
@@ -508,34 +592,136 @@ function generateHtmlFromMarkdown(mdContent: string): string {
     width: 100%;
     border-collapse: collapse;
     margin: 0 0 1rem;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
   }
 
   th, td {
     padding: 0.5rem 0.75rem;
     text-align: left;
-    border-bottom: 1px solid #e0ddd8;
+    border-bottom: 1px solid var(--border);
   }
 
   th {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    font-weight: 600;
-    font-size: 0.85rem;
+    font-weight: 700;
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: #666;
+    color: var(--text-muted);
   }
 
-  @media (max-width: 600px) {
-    body { font-size: 16px; padding: 1.5rem 1rem; }
-    h1 { font-size: 1.5rem; }
+  /* Mobile: collapse sidebar into horizontal strip */
+  @media (max-width: 860px) {
+    nav.toc {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      width: 100%;
+      height: auto;
+      max-height: 50vh;
+      overflow-y: auto;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      display: none;
+    }
+
+    nav.toc.open { display: block; }
+
+    nav.toc .toc-title { display: none; }
+
+    nav.toc ul { display: flex; flex-wrap: wrap; gap: 0.25rem; }
+
+    nav.toc li { margin-bottom: 0; }
+
+    nav.toc a { font-size: 0.78rem; padding: 0.25rem 0.5rem; white-space: nowrap; }
+
+    .toc-toggle {
+      display: block;
+      position: fixed;
+      top: 0.6rem;
+      right: 0.75rem;
+      z-index: 20;
+      background: var(--bg-sidebar);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.3rem 0.6rem;
+      font-family: var(--serif);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .content {
+      margin-left: 0;
+      padding: 2rem 1.25rem 3rem;
+    }
+  }
+
+  @media (min-width: 861px) {
+    .toc-toggle { display: none; }
+  }
+
+  /* Scroll margin for anchored headings */
+  h1[id] { scroll-margin-top: 1rem; }
+
+  @media (max-width: 860px) {
+    h1[id] { scroll-margin-top: 3.5rem; }
   }
 </style>
 </head>
 <body>
-<div class="container">
-${body}
+<button class="toc-toggle" onclick="document.querySelector('.toc').classList.toggle('open')">Contents</button>
+<div class="layout">
+  <nav class="toc">
+    <div class="toc-title">Contents</div>
+    <ul id="toc-list"></ul>
+  </nav>
+  <div class="content">
+    ${body}
+  </div>
 </div>
+<script>
+// Build TOC from H1 headings and add IDs for anchoring
+(function() {
+  const content = document.querySelector('.content');
+  const tocList = document.getElementById('toc-list');
+  const headings = content.querySelectorAll('h1');
+
+  headings.forEach(function(h, i) {
+    const id = 'section-' + i;
+    h.id = id;
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = '#' + id;
+    a.textContent = h.textContent;
+    a.dataset.target = id;
+    li.appendChild(a);
+    tocList.appendChild(li);
+  });
+
+  // Scroll-spy: highlight active TOC entry
+  var tocLinks = tocList.querySelectorAll('a');
+  if (tocLinks.length === 0) return;
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting) {
+        tocLinks.forEach(function(a) { a.classList.remove('active'); });
+        var match = tocList.querySelector('a[data-target="' + entry.target.id + '"]');
+        if (match) match.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-10% 0px -80% 0px' });
+
+  headings.forEach(function(h) { observer.observe(h); });
+
+  // Close mobile TOC on link click
+  tocLinks.forEach(function(a) {
+    a.addEventListener('click', function() {
+      document.querySelector('.toc').classList.remove('open');
+    });
+  });
+})();
+</script>
 </body>
 </html>`;
 }
