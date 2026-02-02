@@ -415,9 +415,9 @@ function generateHtmlFromMarkdown(mdContent: string): string {
     --text-muted: #6b6560;
     --border: #ddd8d0;
     --accent: #8b4513;
-    --accent-light: #a0522d;
     --link: #6b3a1f;
-    --sidebar-w: 240px;
+    --sidebar-w: 220px;
+    --content-max: 700px;
   }
 
   body {
@@ -429,28 +429,27 @@ function generateHtmlFromMarkdown(mdContent: string): string {
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Layout: sidebar + content */
   .layout {
     display: flex;
+    max-width: calc(var(--sidebar-w) + var(--content-max) + 5rem);
+    margin: 0 auto;
     min-height: 100vh;
   }
 
   nav.toc {
-    position: fixed;
+    position: sticky;
     top: 0;
-    left: 0;
+    align-self: flex-start;
     width: var(--sidebar-w);
+    flex-shrink: 0;
     height: 100vh;
     overflow-y: auto;
-    padding: 2rem 1.25rem;
-    background: var(--bg-sidebar);
-    border-right: 1px solid var(--border);
-    z-index: 10;
+    padding: 2.5rem 1.25rem 2rem 0;
   }
 
   nav.toc .toc-title {
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--text-muted);
@@ -459,18 +458,13 @@ function generateHtmlFromMarkdown(mdContent: string): string {
     border-bottom: 1px solid var(--border);
   }
 
-  nav.toc ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
+  nav.toc ul { list-style: none; padding: 0; margin: 0; }
   nav.toc li { margin-bottom: 0.15rem; }
 
   nav.toc a {
     display: block;
     padding: 0.3rem 0.6rem;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     line-height: 1.4;
     color: var(--text-muted);
     text-decoration: none;
@@ -478,50 +472,45 @@ function generateHtmlFromMarkdown(mdContent: string): string {
     transition: color 0.15s, background 0.15s;
   }
 
-  nav.toc a:hover {
-    color: var(--text);
-    background: rgba(0,0,0,0.04);
-  }
-
-  nav.toc a.active {
-    color: var(--accent);
-    background: rgba(139,69,19,0.06);
-    font-weight: 600;
-  }
+  nav.toc a:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+  nav.toc a.active { color: var(--accent); background: rgba(139,69,19,0.06); font-weight: 600; }
 
   .content {
-    margin-left: var(--sidebar-w);
     flex: 1;
-    max-width: 720px;
-    padding: 3rem 2.5rem 4rem;
+    max-width: var(--content-max);
+    padding: 2.5rem 0 4rem 2.5rem;
+    border-left: 1px solid var(--border);
   }
 
-  /* Typography */
   h1 {
     font-family: var(--serif);
-    font-size: 1.65rem;
+    font-size: 1.1rem;
     font-weight: 700;
-    font-style: italic;
-    letter-spacing: -0.01em;
-    margin: 3.5rem 0 0.75rem;
-    padding-bottom: 0.4rem;
-    border-bottom: 1px solid var(--border);
+    font-variant: small-caps;
+    letter-spacing: 0.08em;
+    text-transform: lowercase;
+    margin: 3.5rem 0 0.5rem;
+    padding-bottom: 0;
+    border-bottom: none;
     color: var(--accent);
   }
 
   h1:first-child { margin-top: 0; }
 
+  h1 + hr { display: none; }
+
   h2 {
     font-family: var(--serif);
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin: 2rem 0 0.6rem;
+    font-size: 1.15rem;
+    font-weight: 400;
+    font-style: italic;
+    margin: 1.75rem 0 0.5rem;
     color: var(--text);
   }
 
   h3 {
     font-family: var(--serif);
-    font-size: 1.05rem;
+    font-size: 1rem;
     font-weight: 700;
     margin: 1.5rem 0 0.4rem;
     color: var(--text);
@@ -536,136 +525,37 @@ function generateHtmlFromMarkdown(mdContent: string): string {
   }
 
   p { margin: 0 0 1rem; }
-
   strong { font-weight: 700; }
-
   em { color: var(--text-muted); }
 
   a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(107,58,31,0.3); text-underline-offset: 2px; }
   a:hover { text-decoration-color: var(--link); }
 
-  hr {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 2rem 0;
-  }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
 
-  ul, ol {
-    margin: 0 0 1rem;
-    padding-left: 1.4rem;
-  }
-
+  ul, ol { margin: 0 0 1rem; padding-left: 1.4rem; }
   li { margin-bottom: 0.3rem; }
   li > ul, li > ol { margin-top: 0.3rem; margin-bottom: 0; }
 
-  blockquote {
-    border-left: 2px solid var(--accent);
-    padding: 0.4rem 0 0.4rem 1.25rem;
-    margin: 0 0 1rem;
-    color: var(--text-muted);
-    font-style: italic;
-  }
+  blockquote { border-left: 2px solid var(--accent); padding: 0.4rem 0 0.4rem 1.25rem; margin: 0 0 1rem; color: var(--text-muted); font-style: italic; }
 
-  pre {
-    background: #f0ede8;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 1rem 1.25rem;
-    overflow-x: auto;
-    margin: 0 0 1rem;
-    font-size: 0.82rem;
-    line-height: 1.55;
-  }
+  pre { background: #f0ede8; border: 1px solid var(--border); border-radius: 4px; padding: 1rem 1.25rem; overflow-x: auto; margin: 0 0 1rem; font-size: 0.82rem; line-height: 1.55; }
+  code { font-family: var(--mono); font-size: 0.85em; }
+  :not(pre) > code { background: #eeebe5; padding: 0.12em 0.35em; border-radius: 3px; }
 
-  code {
-    font-family: var(--mono);
-    font-size: 0.85em;
-  }
+  table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.92rem; }
+  th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+  th { font-weight: 700; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
 
-  :not(pre) > code {
-    background: #eeebe5;
-    padding: 0.12em 0.35em;
-    border-radius: 3px;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 0 0 1rem;
-    font-size: 0.92rem;
-  }
-
-  th, td {
-    padding: 0.5rem 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid var(--border);
-  }
-
-  th {
-    font-weight: 700;
-    font-size: 0.78rem;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-  }
-
-  /* Mobile: collapse sidebar into horizontal strip */
   @media (max-width: 860px) {
-    nav.toc {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      width: 100%;
-      height: auto;
-      max-height: 50vh;
-      overflow-y: auto;
-      border-right: none;
-      border-bottom: 1px solid var(--border);
-      padding: 0.75rem 1rem;
-      display: none;
-    }
-
-    nav.toc.open { display: block; }
-
-    nav.toc .toc-title { display: none; }
-
-    nav.toc ul { display: flex; flex-wrap: wrap; gap: 0.25rem; }
-
-    nav.toc li { margin-bottom: 0; }
-
-    nav.toc a { font-size: 0.78rem; padding: 0.25rem 0.5rem; white-space: nowrap; }
-
-    .toc-toggle {
-      display: block;
-      position: fixed;
-      top: 0.6rem;
-      right: 0.75rem;
-      z-index: 20;
-      background: var(--bg-sidebar);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 0.3rem 0.6rem;
-      font-family: var(--serif);
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      cursor: pointer;
-    }
-
-    .content {
-      margin-left: 0;
-      padding: 2rem 1.25rem 3rem;
-    }
+    nav.toc { display: none; }
+    .toc-toggle { display: block; position: fixed; top: 0.6rem; right: 0.75rem; z-index: 20; background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; font-family: var(--serif); font-size: 0.75rem; color: var(--text-muted); cursor: pointer; }
+    .content { padding: 2rem 1.25rem 3rem; border-left: none; }
   }
+  @media (min-width: 861px) { .toc-toggle { display: none; } }
 
-  @media (min-width: 861px) {
-    .toc-toggle { display: none; }
-  }
-
-  /* Scroll margin for anchored headings */
   h1[id] { scroll-margin-top: 1rem; }
-
-  @media (max-width: 860px) {
-    h1[id] { scroll-margin-top: 3.5rem; }
-  }
+  @media (max-width: 860px) { h1[id] { scroll-margin-top: 3.5rem; } }
 </style>
 </head>
 <body>
@@ -680,28 +570,23 @@ function generateHtmlFromMarkdown(mdContent: string): string {
   </div>
 </div>
 <script>
-// Build TOC from H1 headings and add IDs for anchoring
 (function() {
-  const content = document.querySelector('.content');
-  const tocList = document.getElementById('toc-list');
-  const headings = content.querySelectorAll('h1');
-
+  var content = document.querySelector('.content');
+  var tocList = document.getElementById('toc-list');
+  var headings = content.querySelectorAll('h1');
   headings.forEach(function(h, i) {
-    const id = 'section-' + i;
+    var id = 'section-' + i;
     h.id = id;
-    const li = document.createElement('li');
-    const a = document.createElement('a');
+    var li = document.createElement('li');
+    var a = document.createElement('a');
     a.href = '#' + id;
     a.textContent = h.textContent;
     a.dataset.target = id;
     li.appendChild(a);
     tocList.appendChild(li);
   });
-
-  // Scroll-spy: highlight active TOC entry
   var tocLinks = tocList.querySelectorAll('a');
-  if (tocLinks.length === 0) return;
-
+  if (!tocLinks.length) return;
   var observer = new IntersectionObserver(function(entries) {
     entries.forEach(function(entry) {
       if (entry.isIntersecting) {
@@ -711,10 +596,7 @@ function generateHtmlFromMarkdown(mdContent: string): string {
       }
     });
   }, { rootMargin: '-10% 0px -80% 0px' });
-
   headings.forEach(function(h) { observer.observe(h); });
-
-  // Close mobile TOC on link click
   tocLinks.forEach(function(a) {
     a.addEventListener('click', function() {
       document.querySelector('.toc').classList.remove('open');
