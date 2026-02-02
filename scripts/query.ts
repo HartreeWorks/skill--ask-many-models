@@ -11,9 +11,11 @@
 import { config as dotenvConfig } from 'dotenv';
 dotenvConfig({ override: true });
 import { program } from 'commander';
-import { generateText } from 'ai';
+import { generateText, type Tool } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { openai } from '@ai-sdk/openai';
 import { google } from '@ai-sdk/google';
+import { xai } from '@ai-sdk/xai';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname, basename, extname } from 'path';
 import { fileURLToPath } from 'url';
@@ -245,6 +247,34 @@ const VISION_MODELS = [
   'gemini-3-flash',
 ];
 
+// Get web search tools for a provider (returns undefined if not supported or disabled)
+function getWebSearchTools(
+  modelConfig: import('./models.js').ModelConfig
+): Record<string, Tool> | undefined {
+  if (modelConfig.web_search === false) return undefined;
+
+  switch (modelConfig.provider) {
+    case 'openai':
+      return { web_search: openai.tools.webSearchPreview({}) as Tool };
+    case 'google':
+      return {
+        google_search: google.tools.googleSearch({}) as Tool,
+        url_context: google.tools.urlContext({}) as Tool,
+      };
+    case 'xai':
+      return {
+        web_search: xai.tools.webSearch({}) as Tool,
+        x_search: xai.tools.xSearch({}) as Tool,
+      };
+    case 'anthropic': {
+      const anthropicProvider = createAnthropic({ baseURL: 'https://api.anthropic.com/v1' });
+      return { web_search: anthropicProvider.tools.webSearch_20250305({}) as Tool };
+    }
+    default:
+      return undefined;
+  }
+}
+
 // Query a single model
 async function queryModel(
   modelName: string,
@@ -271,6 +301,9 @@ async function queryModel(
   const hasImage = imagePath && existsSync(imagePath);
   const supportsVision = VISION_MODELS.includes(modelName);
 
+  // Get web search tools for this provider
+  const tools = modelConfig ? getWebSearchTools(modelConfig) : undefined;
+
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -294,6 +327,7 @@ async function queryModel(
             { type: 'text', text: prompt },
           ],
         }],
+        tools,
         maxOutputTokens: maxTokens,
         abortSignal: controller.signal,
       });
@@ -303,6 +337,7 @@ async function queryModel(
       result = await generateText({
         model,
         prompt: modifiedPrompt,
+        tools,
         maxOutputTokens: maxTokens,
         abortSignal: controller.signal,
       });
@@ -311,6 +346,7 @@ async function queryModel(
       result = await generateText({
         model,
         prompt,
+        tools,
         maxOutputTokens: maxTokens,
         abortSignal: controller.signal,
       });

@@ -24,6 +24,7 @@ export interface ModelConfig {
   timeout_seconds?: number;
   deep_research?: boolean;
   poll_interval_ms?: number;
+  web_search?: boolean;
 }
 
 export interface PresetConfig {
@@ -63,11 +64,11 @@ export function createModel(modelName: string, config: Config): LanguageModel | 
 
   switch (modelConfig.provider) {
     case 'openai':
-      return openai(modelConfig.model_id);
+      return openai.responses(modelConfig.model_id);
     case 'google':
       return google(modelConfig.model_id);
     case 'xai':
-      return xai(modelConfig.model_id);
+      return xai.responses(modelConfig.model_id);
     case 'anthropic': {
       const anthropicProvider = createAnthropic({
         baseURL: 'https://api.anthropic.com/v1',
