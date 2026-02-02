@@ -88,7 +88,8 @@ else
 fi
 
 # Validate prompt is not empty or whitespace-only
-PROMPT_TRIMMED=$(echo "$PROMPT" | xargs)
+PROMPT_TRIMMED="${PROMPT#"${PROMPT%%[![:space:]]*}"}"
+PROMPT_TRIMMED="${PROMPT_TRIMMED%"${PROMPT_TRIMMED##*[![:space:]]}"}"
 if [[ -z "$PROMPT_TRIMMED" ]]; then
     echo "Error: Prompt cannot be empty."
     exit 1
