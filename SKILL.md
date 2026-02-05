@@ -13,23 +13,51 @@ Send the same prompt to multiple AI models in parallel and synthesise their resp
 
 ### Execution Steps
 
-#### Step 1: Get the prompt
+#### Step 1: Get or draft the prompt
 
+**A) Cold start** (conversation just began, no prior discussion):
 If the user provided a prompt/question, use it. Otherwise ask: "What question would you like to send to multiple AI models?"
+
+**B) Mid-conversation** (there's been substantive discussion before this):
+When invoked after a conversation, ALWAYS draft a comprehensive prompt that:
+
+1. **Captures the full context** - Include relevant background, constraints, and goals discussed
+2. **Includes substantive content** - Don't just summarise files; include actual excerpts, code snippets, or data that other models need to answer well
+3. **States the core question clearly** - What specific insight/decision/analysis is needed
+4. **Notes any constraints or preferences** - Technical requirements, style preferences, etc.
+
+**Prompt drafting checklist:**
+- [ ] Background context (2-4 paragraphs minimum)
+- [ ] Any relevant file contents or code (include actual content, not just "see attached")
+- [ ] The specific question(s) to answer
+- [ ] What format/depth of response is useful
+
+**IMPORTANT**: Err on the side of including MORE context than seems necessary. Other models don't have access to this conversation—they only see the prompt you write. A prompt that seems "too long" to you is usually about right.
+
+Save the drafted prompt to a file and show it to the user for approval before proceeding:
+```bash
+echo "<prompt>" > /tmp/amm-prompt-draft.md && open /tmp/amm-prompt-draft.md
+```
+
+Ask: "I've drafted a prompt capturing our discussion. Please review and let me know if you'd like any changes, or say 'go' to proceed."
 
 #### Step 2: Model selection
 
-Use AskUserQuestion to ask which models to use:
+**Do NOT use AskUserQuestion for model selection** (it has a 4-option limit which is too restrictive). Instead, print this menu and wait for user input:
 
-- **Header**: "Models"
-- **Question**: "Which models should I query?"
-- **Options**:
-  1. "Defaults" - GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Grok 4.1 (Recommended)
-  2. "Quick" - Gemini 3 Flash, Grok 4.1 Fast, Claude 4.5 Sonnet (~10s)
-  3. "Deep Research" - Defaults + OpenAI/Gemini deep research (20-40 min)
-  4. "Pick models" - Choose individual models
+```
+Which models should I query?
 
-If "Pick models" selected, print this numbered list and ask user to type the numbers they want (comma-separated):
+1. ⚡ Defaults - GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Grok 4.1 (Recommended)
+2. 🚀 Quick - Gemini 3 Flash, Grok 4.1 Fast, Claude 4.5 Sonnet (~10s)
+3. 📊 Comprehensive - Defaults + GPT-5.2 Pro (slow, extra compute)
+4. 🔬 Deep Research - Defaults + OpenAI/Gemini deep research (20-40 min)
+5. 🔧 Pick models - Choose individual models
+
+Enter a number (1-5):
+```
+
+If user selects **5 (Pick models)**, print this list and ask for comma-separated numbers:
 
 ```
 Available models:
@@ -41,7 +69,7 @@ Available models:
 6. grok-4.1-non-reasoning
 7. claude-4.5-sonnet
 8. gpt-5.2
-9. gpt-5.2-pro (slow)
+9. gpt-5.2-pro (slow, extra compute)
 10. claude-4.5-opus
 11. openai-deep-research (20-40 min)
 12. gemini-deep-research (20-40 min)
@@ -61,7 +89,8 @@ If an image is in the conversation, save it to:
 Map selection to model IDs:
 - **Defaults**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1`
 - **Quick**: `gemini-3-flash,grok-4.1-non-reasoning,claude-4.5-sonnet`
-- **Deep Research**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1,openai-deep-research,gemini-deep-research`
+- **Comprehensive**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1,gpt-5.2-pro`
+- **Deep Research**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1,gpt-5.2-pro,openai-deep-research,gemini-deep-research`
 
 Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars).
 
