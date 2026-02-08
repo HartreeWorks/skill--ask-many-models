@@ -215,6 +215,16 @@ main() {
     if [[ "$needs_keys" == "true" ]] || ! step_completed "api_keys"; then
         print_step "$step_num/$total_steps" "Setting up API keys"
 
+        echo -e "  ${BOLD}What's an API key?${NC}"
+        echo -e "  An API key is like a password that lets this tool talk to AI"
+        echo -e "  services (OpenAI, Google, etc.) on your behalf. Each provider"
+        echo -e "  gives you a unique key from their website."
+        echo ""
+        echo -e "  ${DIM}You'll need to create a free account with each provider,"
+        echo -e "  then copy a key from their developer dashboard. We'll walk"
+        echo -e "  you through it step by step.${NC}"
+        echo ""
+
         echo "  Which providers do you want to use?"
         echo ""
 
@@ -243,12 +253,20 @@ EOF
 
         # Configure each selected provider
         if echo "$PROVIDERS" | grep -q "OpenAI"; then
-            echo -e "  ${BOLD}OpenAI API Key${NC}"
-            print_info "Get one at: https://platform.openai.com/api-keys"
+            echo -e "  ${BOLD}OpenAI API Key${NC} (for GPT models)"
+            echo ""
+            echo -e "  ${DIM}How to get your key:${NC}"
+            echo -e "  ${DIM}1. Open ${NC}${BLUE}https://platform.openai.com/api-keys${NC}"
+            echo -e "  ${DIM}2. Sign in or create a free account${NC}"
+            echo -e "  ${DIM}3. Click \"Create new secret key\"${NC}"
+            echo -e "  ${DIM}4. Give it a name (e.g. \"Ask Many Models\") and click \"Create\"${NC}"
+            echo -e "  ${DIM}5. Copy the key — it starts with sk-proj-${NC}"
+            echo -e "  ${DIM}   (You won't be able to see it again, so copy it now!)${NC}"
+            echo ""
 
-            OPENAI_KEY=$(gum input --placeholder "sk-proj-..." --width=80 --password || true)
+            OPENAI_KEY=$(gum input --placeholder "Paste your key here (sk-proj-...)" --width=80 --password || true)
 
-            if [[ -n "$OPENAI_KEY" && "$OPENAI_KEY" != "sk-proj-..." ]]; then
+            if [[ -n "$OPENAI_KEY" && "$OPENAI_KEY" != "Paste your key here (sk-proj-...)" ]]; then
                 # Remove existing key if present
                 grep -v "^OPENAI_API_KEY=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
                 mv "$ENV_FILE.tmp" "$ENV_FILE"
@@ -267,12 +285,19 @@ EOF
         fi
 
         if echo "$PROVIDERS" | grep -q "Google"; then
-            echo -e "  ${BOLD}Google AI Studio API Key${NC}"
-            print_info "Get one at: https://aistudio.google.com/apikey"
+            echo -e "  ${BOLD}Google AI Studio API Key${NC} (for Gemini models)"
+            echo ""
+            echo -e "  ${DIM}How to get your key:${NC}"
+            echo -e "  ${DIM}1. Open ${NC}${BLUE}https://aistudio.google.com/app/api-keys${NC}"
+            echo -e "  ${DIM}2. Sign in with your Google account${NC}"
+            echo -e "  ${DIM}3. Click \"Create API key\"${NC}"
+            echo -e "  ${DIM}4. Choose a project (or let it create one for you)${NC}"
+            echo -e "  ${DIM}5. Copy the key — it starts with AIza${NC}"
+            echo ""
 
-            GOOGLE_KEY=$(gum input --placeholder "AIza..." --width=80 --password || true)
+            GOOGLE_KEY=$(gum input --placeholder "Paste your key here (AIza...)" --width=80 --password || true)
 
-            if [[ -n "$GOOGLE_KEY" && "$GOOGLE_KEY" != "AIza..." ]]; then
+            if [[ -n "$GOOGLE_KEY" && "$GOOGLE_KEY" != "Paste your key here (AIza...)" ]]; then
                 grep -v "^GOOGLE_GENERATIVE_AI_API_KEY=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
                 grep -v "^GEMINI_API_KEY=" "$ENV_FILE.tmp" > "$ENV_FILE" || true
                 echo "GOOGLE_GENERATIVE_AI_API_KEY=$GOOGLE_KEY" >> "$ENV_FILE"
@@ -290,12 +315,20 @@ EOF
         fi
 
         if echo "$PROVIDERS" | grep -q "xAI"; then
-            echo -e "  ${BOLD}xAI API Key${NC}"
-            print_info "Get one at: https://console.x.ai"
+            echo -e "  ${BOLD}xAI API Key${NC} (for Grok models)"
+            echo ""
+            echo -e "  ${DIM}How to get your key:${NC}"
+            echo -e "  ${DIM}1. Open ${NC}${BLUE}https://console.x.ai/create-team${NC}"
+            echo -e "  ${DIM}2. Sign in with your X (Twitter) account or create one${NC}"
+            echo -e "  ${DIM}3. Create a team if prompted${NC}"
+            echo -e "  ${DIM}4. Go to \"API Keys\" in the left sidebar${NC}"
+            echo -e "  ${DIM}5. Click \"Create API Key\", give it a name, and copy it${NC}"
+            echo -e "  ${DIM}   The key starts with xai-${NC}"
+            echo ""
 
-            XAI_KEY=$(gum input --placeholder "xai-..." --width=80 --password || true)
+            XAI_KEY=$(gum input --placeholder "Paste your key here (xai-...)" --width=80 --password || true)
 
-            if [[ -n "$XAI_KEY" && "$XAI_KEY" != "xai-..." ]]; then
+            if [[ -n "$XAI_KEY" && "$XAI_KEY" != "Paste your key here (xai-...)" ]]; then
                 grep -v "^XAI_API_KEY=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
                 mv "$ENV_FILE.tmp" "$ENV_FILE"
                 echo "XAI_API_KEY=$XAI_KEY" >> "$ENV_FILE"
@@ -312,13 +345,19 @@ EOF
         fi
 
         if echo "$PROVIDERS" | grep -q "Anthropic"; then
-            echo -e "  ${BOLD}Anthropic API Key${NC}"
-            print_info "Get one at: https://console.anthropic.com/settings/keys"
-            print_info "(Optional - you're already using Claude Code)"
+            echo -e "  ${BOLD}Anthropic API Key${NC} (for Claude models — optional)"
+            echo -e "  ${DIM}(If you're already using Claude Code, you may not need this)${NC}"
+            echo ""
+            echo -e "  ${DIM}How to get your key:${NC}"
+            echo -e "  ${DIM}1. Open ${NC}${BLUE}https://platform.claude.com/settings/keys${NC}"
+            echo -e "  ${DIM}2. Sign in or create an account${NC}"
+            echo -e "  ${DIM}3. Click \"Create Key\"${NC}"
+            echo -e "  ${DIM}4. Give it a name and copy the key — it starts with sk-ant-${NC}"
+            echo ""
 
-            ANTHROPIC_KEY=$(gum input --placeholder "sk-ant-..." --width=80 --password || true)
+            ANTHROPIC_KEY=$(gum input --placeholder "Paste your key here (sk-ant-...)" --width=80 --password || true)
 
-            if [[ -n "$ANTHROPIC_KEY" && "$ANTHROPIC_KEY" != "sk-ant-..." ]]; then
+            if [[ -n "$ANTHROPIC_KEY" && "$ANTHROPIC_KEY" != "Paste your key here (sk-ant-...)" ]]; then
                 grep -v "^ANTHROPIC_API_KEY=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
                 mv "$ENV_FILE.tmp" "$ENV_FILE"
                 echo "ANTHROPIC_API_KEY=$ANTHROPIC_KEY" >> "$ENV_FILE"

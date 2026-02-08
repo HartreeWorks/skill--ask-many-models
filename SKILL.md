@@ -51,7 +51,7 @@ Which models should I query?
 1. ⚡ Defaults - GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Grok 4.1 (Recommended)
 2. 🚀 Quick - Gemini 3 Flash, Grok 4.1 Fast, Claude 4.5 Sonnet (~10s)
 3. 📊 Comprehensive - Defaults + GPT-5.2 Pro (slow, extra compute)
-4. 🔬 Deep Research - Defaults + OpenAI/Gemini deep research (20-40 min)
+4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.2 Pro (20-40 min)
 5. 🔧 Pick models - Choose individual models
 
 Enter a number (1-5):
@@ -90,7 +90,7 @@ Map selection to model IDs:
 - **Defaults**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1`
 - **Quick**: `gemini-3-flash,grok-4.1-non-reasoning,claude-4.5-sonnet`
 - **Comprehensive**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1,gpt-5.2-pro`
-- **Deep Research**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1,gpt-5.2-pro,openai-deep-research,gemini-deep-research`
+- **Deep Research**: `openai-deep-research,gemini-deep-research,gpt-5.2-pro`
 
 Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars).
 

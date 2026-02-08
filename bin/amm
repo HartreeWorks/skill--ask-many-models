@@ -128,7 +128,7 @@ else
         "⚡ Defaults ($DEFAULT_MODELS_CSV)"
         "🚀 Quick ($QUICK_MODELS)"
         "📊 Comprehensive (all default models + GPT 5.2 Pro)"
-        "🔬 Deep Research (20-40 min)"
+        "🔬 Deep Research + GPT 5.2 Pro (20-40 min)"
         "💫 Comprehensive + Deep Research"
         "🔧 Pick individual models..."
     )

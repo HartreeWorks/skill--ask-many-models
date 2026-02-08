@@ -12,7 +12,7 @@
     },
     "deep-research": {
       "description": "Deep research (20-40 min per model)",
-      "models": ["openai-deep-research", "gemini-deep-research"],
+      "models": ["openai-deep-research", "gemini-deep-research", "gpt-5.2-pro"],
       "timeout_seconds": 3600
     },
     "comprehensive-deep": {
