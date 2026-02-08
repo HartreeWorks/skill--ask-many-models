@@ -1149,7 +1149,7 @@ async function runQuery(
     createLiveFile(options.liveFile, prompt, allModelsToShow, options.image, contextPaths);
   }
 
-  // Start deep research queries in background (they run for 20-40 min)
+  // Start deep research queries in background (they run for 10-20 min)
   const deepResearchPromises: Promise<void>[] = [];
 
   // Track deep research progress for console output
@@ -1297,9 +1297,9 @@ async function runQuery(
   // Add quick results to allResults
   allResults.push(...quickResults);
 
-  // Wait for deep research to complete (this can take 20-40 min)
+  // Wait for deep research to complete (this can take 10-20 min)
   if (deepResearchPromises.length > 0) {
-    console.log('\n\x1b[1m\x1b[33m⏳ Waiting for deep research to complete (this may take 20-40 minutes)...\x1b[0m');
+    console.log('\n\x1b[1m\x1b[33m⏳ Waiting for deep research to complete (this may take 10-20 minutes)...\x1b[0m');
     console.log('\x1b[2m   Quick model results are already available in the live file.\x1b[0m\n');
 
     // Progress display (updates every 1s for smooth timer, API polling happens every 10s internally)

@@ -136,7 +136,7 @@ export function notifyDeepResearchStarted(models: string[]): void {
   notify({
     title: 'Ask Many Models',
     message: `Starting ${models.length} deep research model(s)`,
-    subtitle: 'This will take 20-40 minutes',
+    subtitle: 'This will take 10-20 minutes',
     sound: 'default',
     group: 'ask-many-models-deep-research',
   });

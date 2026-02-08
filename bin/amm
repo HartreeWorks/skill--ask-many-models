@@ -128,7 +128,7 @@ else
         "⚡ Defaults ($DEFAULT_MODELS_CSV)"
         "🚀 Quick ($QUICK_MODELS)"
         "📊 Comprehensive (all default models + GPT 5.2 Pro)"
-        "🔬 Deep Research + GPT 5.2 Pro (20-40 min)"
+        "🔬 Deep Research + GPT 5.2 Pro (10-20 min)"
         "💫 Comprehensive + Deep Research"
         "🔧 Pick individual models..."
     )
@@ -177,7 +177,7 @@ CONTEXT_DESCRIPTIONS=()
 if [[ "${IS_DEEP_RESEARCH:-false}" == "true" ]]; then
     echo ""
     gum style --foreground 214 --bold "⚠️  Deep Research Mode"
-    echo "Deep research models take 20-40 minutes per model."
+    echo "Deep research models take 10-20 minutes per model."
     echo "Quick models will return results in ~30 seconds."
 
     # Loop for adding multiple context sources

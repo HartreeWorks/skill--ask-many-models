@@ -51,7 +51,7 @@ Which models should I query?
 1. ⚡ Defaults - GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Grok 4.1 (Recommended)
 2. 🚀 Quick - Gemini 3 Flash, Grok 4.1 Fast, Claude 4.5 Sonnet (~10s)
 3. 📊 Comprehensive - Defaults + GPT-5.2 Pro (slow, extra compute)
-4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.2 Pro (20-40 min)
+4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.2 Pro (10-20 min)
 5. 🔧 Pick models - Choose individual models
 
 Enter a number (1-5):
@@ -71,8 +71,8 @@ Available models:
 8. gpt-5.2
 9. gpt-5.2-pro (slow, extra compute)
 10. claude-4.5-opus
-11. openai-deep-research (20-40 min)
-12. gemini-deep-research (20-40 min)
+11. openai-deep-research (10-20 min)
+12. gemini-deep-research (10-20 min)
 
 Enter numbers (e.g. 1,2,5):
 ```
@@ -207,12 +207,12 @@ Alternatively, read the individual responses from the `individual/` subdirectory
 |--------|--------|----------|
 | `quick` | Gemini 3 Flash, Grok 4.1 (Fast), Claude 4.5 Sonnet | Fast responses (~10s) |
 | `comprehensive` | Defaults + GPT-5.2 Pro | Thorough coverage (~60s) |
-| `deep-research` | OpenAI Deep Research, Gemini Deep Research | In-depth research (API, 20-40 min) |
+| `deep-research` | OpenAI Deep Research, Gemini Deep Research | In-depth research (API, 10-20 min) |
 | `comprehensive-deep` | Quick models + deep research | Best of both worlds |
 
 ## Deep Research Mode
 
-Deep research models (OpenAI o3-deep-research and Gemini Deep Research) conduct comprehensive web research and take 20-40 minutes per model.
+Deep research models (OpenAI o3-deep-research and Gemini Deep Research) conduct comprehensive web research and take 10-20 minutes per model.
 
 ### Using Deep Research
 
@@ -223,7 +223,7 @@ amm "What are the latest developments in quantum computing?"
 ```
 
 When deep research is selected:
-1. **Duration warning** is shown (20-40 minutes expected)
+1. **Duration warning** is shown (10-20 minutes expected)
 2. **Context picker** lets you add files/folders as background context
 3. **Quick models** return results in ~30 seconds with preliminary synthesis
 4. **Deep research** shows progress updates every 10 seconds
@@ -339,8 +339,8 @@ multi-model-responses/
 
 | Model ID | Display Name | Provider | Duration |
 |----------|--------------|----------|----------|
-| openai-deep-research | OpenAI Deep Research | OpenAI | 20-40 min |
-| gemini-deep-research | Gemini Deep Research | Google | 20-40 min |
+| openai-deep-research | OpenAI Deep Research | OpenAI | 10-20 min |
+| gemini-deep-research | Gemini Deep Research | Google | 10-20 min |
 
 ## Notifications
 

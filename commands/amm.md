@@ -32,7 +32,7 @@ Use AskUserQuestion with these preset options (matching the CLI):
 - **Options**:
   1. "Defaults" - GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Grok 4.1 (Recommended)
   2. "Quick" - Gemini 3 Flash, Grok 4.1 Fast, Claude 4.5 Sonnet (~10s)
-  3. "Deep Research" - Defaults + OpenAI/Gemini deep research (20-40 min)
+  3. "Deep Research" - Defaults + OpenAI/Gemini deep research (10-20 min)
   4. "Pick models" - Choose individual models
 
 If user selects "Pick models", print this numbered list and ask them to type the numbers they want:
@@ -49,8 +49,8 @@ Available models:
 8. gpt-5.2
 9. gpt-5.2-pro (slow)
 10. claude-4.5-opus
-11. openai-deep-research (20-40 min)
-12. gemini-deep-research (20-40 min)
+11. openai-deep-research (10-20 min)
+12. gemini-deep-research (10-20 min)
 
 Enter numbers (e.g. 1,2,5):
 ```
@@ -104,7 +104,7 @@ The `--synthesise` flag runs Claude Opus 4.5 with extended thinking to synthesis
 |--------|--------|-------|
 | Defaults | gpt-5.2-thinking, claude-4.5-opus-thinking, gemini-3-pro, grok-4.1 | ~30s |
 | Quick | gemini-3-flash, grok-4.1-non-reasoning, claude-4.5-sonnet | ~10s |
-| Deep Research | Defaults + openai-deep-research, gemini-deep-research | 20-40 min |
+| Deep Research | Defaults + openai-deep-research, gemini-deep-research | 10-20 min |
 
 ### All Models
 
@@ -120,5 +120,5 @@ The `--synthesise` flag runs Claude Opus 4.5 with extended thinking to synthesis
 | claude-4.5-opus | Claude 4.5 Opus | ✓ | |
 | claude-4.5-sonnet | Claude 4.5 Sonnet | ✓ | |
 | grok-4.1-non-reasoning | Grok 4.1 (Fast) | | |
-| openai-deep-research | OpenAI Deep Research | | 20-40 min |
-| gemini-deep-research | Gemini Deep Research | | 20-40 min |
+| openai-deep-research | OpenAI Deep Research | | 10-20 min |
+| gemini-deep-research | Gemini Deep Research | | 10-20 min |
