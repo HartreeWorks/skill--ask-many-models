@@ -48,7 +48,7 @@ Ask: "I've drafted a prompt capturing our discussion. Please review and let me k
 ```
 Which models should I query?
 
-1. ⚡ Defaults - GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Grok 4.1 (Recommended)
+1. ⚡ Defaults - GPT-5.2 Thinking, Claude 4.6 Opus Thinking, Gemini 3 Pro, Grok 4.1 (Recommended)
 2. 🚀 Quick - Gemini 3 Flash, Grok 4.1 Fast, Claude 4.5 Sonnet (~10s)
 3. 📊 Comprehensive - Defaults + GPT-5.2 Pro (slow, extra compute)
 4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.2 Pro (10-20 min)
@@ -62,7 +62,7 @@ If user selects **5 (Pick models)**, print this list and ask for comma-separated
 ```
 Available models:
 1. gpt-5.2-thinking (default)
-2. claude-4.5-opus-thinking (default)
+2. claude-4.6-opus-thinking (default)
 3. gemini-3-pro (default)
 4. grok-4.1 (default)
 5. gemini-3-flash
@@ -70,7 +70,7 @@ Available models:
 7. claude-4.5-sonnet
 8. gpt-5.2
 9. gpt-5.2-pro (slow, extra compute)
-10. claude-4.5-opus
+10. claude-4.6-opus
 11. openai-deep-research (10-20 min)
 12. gemini-deep-research (10-20 min)
 
@@ -87,9 +87,9 @@ If an image is in the conversation, save it to:
 #### Step 4: Run the query
 
 Map selection to model IDs:
-- **Defaults**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1`
+- **Defaults**: `gpt-5.2-thinking,claude-4.6-opus-thinking,gemini-3-pro,grok-4.1`
 - **Quick**: `gemini-3-flash,grok-4.1-non-reasoning,claude-4.5-sonnet`
-- **Comprehensive**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1,gpt-5.2-pro`
+- **Comprehensive**: `gpt-5.2-thinking,claude-4.6-opus-thinking,gemini-3-pro,grok-4.1,gpt-5.2-pro`
 - **Deep Research**: `openai-deep-research,gemini-deep-research,gpt-5.2-pro`
 
 Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars).
@@ -144,7 +144,7 @@ Paste an image into your message along with your question to have vision-capable
 /amm "What's in this image?" [paste image]
 ```
 
-Vision-capable models: GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Claude 4.5 Sonnet, Gemini 3 Pro, Gemini 3 Flash
+Vision-capable models: GPT-5.2 Thinking, Claude 4.6 Opus Thinking, Claude 4.5 Sonnet, Gemini 3 Pro, Gemini 3 Flash
 
 Models without vision support will receive just the text prompt with a note that an image was provided.
 
@@ -313,7 +313,7 @@ multi-model-responses/
     ├── synthesis.md        # Claude's synthesis
     └── individual/
         ├── gpt-5.2-thinking.md
-        ├── claude-4.5-opus-thinking.md
+        ├── claude-4.6-opus-thinking.md
         ├── gemini-3-pro.md
         └── grok-4.md
 ```
@@ -325,13 +325,13 @@ multi-model-responses/
 | Model ID | Display Name | Provider | Vision |
 |----------|--------------|----------|--------|
 | gpt-5.2-thinking | GPT-5.2 Thinking | OpenAI | ✓ |
-| claude-4.5-opus-thinking | Claude 4.5 Opus Thinking | Anthropic | ✓ |
+| claude-4.6-opus-thinking | Claude 4.6 Opus Thinking | Anthropic | ✓ |
 | grok-4.1 | Grok 4.1 (Reasoning) | xAI | |
 | gemini-3-pro | Gemini 3 Pro | Google | ✓ |
 | gemini-3-flash | Gemini 3 Flash | Google | ✓ |
 | gpt-5.2 | GPT-5.2 | OpenAI | ✓ |
 | gpt-5.2-pro | GPT-5.2 Pro | OpenAI | ✓ |
-| claude-4.5-opus | Claude 4.5 Opus | Anthropic | ✓ |
+| claude-4.6-opus | Claude 4.6 Opus | Anthropic | ✓ |
 | claude-4.5-sonnet | Claude 4.5 Sonnet | Anthropic | ✓ |
 | grok-4.1-non-reasoning | Grok 4.1 (Fast) | xAI | |
 

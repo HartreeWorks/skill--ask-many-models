@@ -30,7 +30,7 @@ Use AskUserQuestion with these preset options (matching the CLI):
 - **Header**: "Models"
 - **Question**: "Which models should I query?"
 - **Options**:
-  1. "Defaults" - GPT-5.2 Thinking, Claude 4.5 Opus Thinking, Gemini 3 Pro, Grok 4.1 (Recommended)
+  1. "Defaults" - GPT-5.2 Thinking, Claude 4.6 Opus Thinking, Gemini 3 Pro, Grok 4.1 (Recommended)
   2. "Quick" - Gemini 3 Flash, Grok 4.1 Fast, Claude 4.5 Sonnet (~10s)
   3. "Deep Research" - Defaults + OpenAI/Gemini deep research (10-20 min)
   4. "Pick models" - Choose individual models
@@ -40,7 +40,7 @@ If user selects "Pick models", print this numbered list and ask them to type the
 ```
 Available models:
 1. gpt-5.2-thinking (default)
-2. claude-4.5-opus-thinking (default)
+2. claude-4.6-opus-thinking (default)
 3. gemini-3-pro (default)
 4. grok-4.1 (default)
 5. gemini-3-flash
@@ -48,7 +48,7 @@ Available models:
 7. claude-4.5-sonnet
 8. gpt-5.2
 9. gpt-5.2-pro (slow)
-10. claude-4.5-opus
+10. claude-4.6-opus
 11. openai-deep-research (10-20 min)
 12. gemini-deep-research (10-20 min)
 
@@ -63,14 +63,14 @@ If an image is present in the conversation:
 1. Save it to `/Users/ph/.claude/skills/ask-many-models/multi-model-responses/image-TIMESTAMP.png`
 2. Note the path for the `--image` flag
 
-Vision-capable models: gpt-5.2-thinking, claude-4.5-opus-thinking, claude-4.5-sonnet, gemini-3-pro, gemini-3-flash
+Vision-capable models: gpt-5.2-thinking, claude-4.6-opus-thinking, claude-4.5-sonnet, gemini-3-pro, gemini-3-flash
 
 ### Step 4: Run the query
 
 Map the selection to models:
-- **Defaults**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1`
+- **Defaults**: `gpt-5.2-thinking,claude-4.6-opus-thinking,gemini-3-pro,grok-4.1`
 - **Quick**: `gemini-3-flash,grok-4.1-non-reasoning,claude-4.5-sonnet`
-- **Deep Research**: `gpt-5.2-thinking,claude-4.5-opus-thinking,gemini-3-pro,grok-4.1,openai-deep-research,gemini-deep-research`
+- **Deep Research**: `gpt-5.2-thinking,claude-4.6-opus-thinking,gemini-3-pro,grok-4.1,openai-deep-research,gemini-deep-research`
 - **Pick models**: Use the selected model IDs
 
 Generate a slug from the prompt (lowercase, replace non-alphanumeric with hyphens, max 50 chars).
@@ -94,7 +94,7 @@ cd /Users/ph/.claude/skills/ask-many-models && yarn query \
    - `"html"` → `open "<live-file-path with .md replaced by .html>"`
    - `"markdown"` (or absent) → `open "<live-file-path>"`
 
-The `--synthesise` flag runs Claude Opus 4.5 with extended thinking to synthesise responses automatically.
+The `--synthesise` flag runs Claude Opus 4.6 with extended thinking to synthesise responses automatically.
 
 ## Model Reference
 
@@ -102,7 +102,7 @@ The `--synthesise` flag runs Claude Opus 4.5 with extended thinking to synthesis
 
 | Preset | Models | Speed |
 |--------|--------|-------|
-| Defaults | gpt-5.2-thinking, claude-4.5-opus-thinking, gemini-3-pro, grok-4.1 | ~30s |
+| Defaults | gpt-5.2-thinking, claude-4.6-opus-thinking, gemini-3-pro, grok-4.1 | ~30s |
 | Quick | gemini-3-flash, grok-4.1-non-reasoning, claude-4.5-sonnet | ~10s |
 | Deep Research | Defaults + openai-deep-research, gemini-deep-research | 10-20 min |
 
@@ -111,13 +111,13 @@ The `--synthesise` flag runs Claude Opus 4.5 with extended thinking to synthesis
 | Model ID | Display Name | Vision | Notes |
 |----------|--------------|--------|-------|
 | gpt-5.2-thinking | GPT-5.2 Thinking | ✓ | |
-| claude-4.5-opus-thinking | Claude 4.5 Opus Thinking | ✓ | |
+| claude-4.6-opus-thinking | Claude 4.6 Opus Thinking | ✓ | |
 | grok-4.1 | Grok 4.1 (Reasoning) | | |
 | gemini-3-pro | Gemini 3 Pro | ✓ | |
 | gemini-3-flash | Gemini 3 Flash | ✓ | |
 | gpt-5.2 | GPT-5.2 | ✓ | |
 | gpt-5.2-pro | GPT-5.2 Pro | ✓ | Slow |
-| claude-4.5-opus | Claude 4.5 Opus | ✓ | |
+| claude-4.6-opus | Claude 4.6 Opus | ✓ | |
 | claude-4.5-sonnet | Claude 4.5 Sonnet | ✓ | |
 | grok-4.1-non-reasoning | Grok 4.1 (Fast) | | |
 | openai-deep-research | OpenAI Deep Research | | 10-20 min |

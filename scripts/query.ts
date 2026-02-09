@@ -240,8 +240,8 @@ const VISION_MODELS = [
   'gpt-5.2-thinking',
   'gpt-5.2',
   'gpt-5.2-pro',
-  'claude-4.5-opus-thinking',
-  'claude-4.5-opus',
+  'claude-4.6-opus-thinking',
+  'claude-4.6-opus',
   'claude-4.5-sonnet',
   'gemini-3-pro',
   'gemini-3-flash',
@@ -915,7 +915,7 @@ async function performSynthesis(
 
     try {
       const result = await generateText({
-        model: createAnthropic({ baseURL: 'https://api.anthropic.com/v1' })('claude-opus-4-5-20251101'),
+        model: createAnthropic({ baseURL: 'https://api.anthropic.com/v1' })('claude-opus-4-6'),
         prompt: synthesisPrompt,
         maxOutputTokens: 16000,
         providerOptions: {
