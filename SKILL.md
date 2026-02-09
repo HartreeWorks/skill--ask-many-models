@@ -377,7 +377,3 @@ The live markdown file updates continuously so you can read responses as they ar
 3. **Save synthesis prompts** for consistent formatting
 4. **Check individual responses** when synthesis seems off
 5. **Update model IDs** in config.json as providers release new models
-
-## Update check
-
-This skill is managed by [skills.sh](https://skills.sh). To check for updates, run `npx skills update`.
