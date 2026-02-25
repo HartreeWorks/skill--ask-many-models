@@ -224,13 +224,13 @@ export async function queryOpenAIDeepResearch(config: DeepResearchConfig): Promi
  */
 export async function queryGeminiDeepResearch(config: DeepResearchConfig): Promise<DeepResearchResult> {
   const startTime = Date.now();
-  const apiKey = getEnvVar('GEMINI_API_KEY') || getEnvVar('GOOGLE_API_KEY');
+  const apiKey = getEnvVar('GOOGLE_GENERATIVE_AI_API_KEY') || getEnvVar('GEMINI_API_KEY');
 
   if (!apiKey) {
     return {
       model: config.modelName,
       status: 'error',
-      error: 'GEMINI_API_KEY not found. Set it in ~/.claude/skills/ask-many-models/.env',
+      error: 'GOOGLE_GENERATIVE_AI_API_KEY not found. Set it in ~/.claude/skills/ask-many-models/.env',
       latencyMs: Date.now() - startTime,
     };
   }

@@ -301,7 +301,6 @@ EOF
                 grep -v "^GOOGLE_GENERATIVE_AI_API_KEY=" "$ENV_FILE" > "$ENV_FILE.tmp" || true
                 grep -v "^GEMINI_API_KEY=" "$ENV_FILE.tmp" > "$ENV_FILE" || true
                 echo "GOOGLE_GENERATIVE_AI_API_KEY=$GOOGLE_KEY" >> "$ENV_FILE"
-                echo "GEMINI_API_KEY=$GOOGLE_KEY" >> "$ENV_FILE"
 
                 echo -n "  Validating... "
                 if [[ $(validate_key "google") == "true" ]]; then

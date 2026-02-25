@@ -252,20 +252,6 @@ This is useful for:
 4. Deep research updates show status every 10 seconds
 5. Final synthesis incorporates deep research findings when complete
 
-### API Keys for Deep Research
-
-Deep research requires additional API keys in `.env`:
-
-```bash
-# For OpenAI Deep Research (o3-deep-research)
-OPENAI_API_KEY=sk-proj-xxx
-
-# For Gemini Deep Research
-GEMINI_API_KEY=AIza-xxx
-# or
-GOOGLE_API_KEY=AIza-xxx
-```
-
 ## Synthesis Approach
 
 The synthesis identifies:
