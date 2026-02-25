@@ -82,7 +82,7 @@ Then map user's numbers to model IDs.
 #### Step 3: Check for images
 
 If an image is in the conversation, save it to:
-`/Users/ph/.claude/skills/ask-many-models/multi-model-responses/image-TIMESTAMP.png`
+`/Users/ph/.claude/skills/ask-many-models/data/multi-model-responses/image-TIMESTAMP.png`
 
 #### Step 4: Run the query
 
@@ -97,7 +97,7 @@ Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars
 ```bash
 cd /Users/ph/.claude/skills/ask-many-models && yarn query \
   --models "<model-ids>" \
-  --live-file "/Users/ph/.claude/skills/ask-many-models/multi-model-responses/$(date +%Y-%m-%d-%H%M)-<slug>.md" \
+  --live-file "/Users/ph/.claude/skills/ask-many-models/data/multi-model-responses/$(date +%Y-%m-%d-%H%M)-<slug>.md" \
   --synthesise \
   --output-format both \
   [--image "<path>"] \
@@ -183,7 +183,7 @@ yarn query --preset frontier "What are the key considerations for..."
 
 This will:
 - Query all models in the preset in parallel
-- Save responses to `multi-model-responses/<timestamp>-<slug>/`
+- Save responses to `data/multi-model-responses/<timestamp>-<slug>/`
 - Print a summary of successful/failed queries
 
 ### Step 2: Synthesise Responses
@@ -192,7 +192,7 @@ The skill generates a synthesis prompt. To synthesise:
 
 1. Generate the prompt:
    ```bash
-   yarn query synthesise multi-model-responses/<your-query-dir>
+   yarn query synthesise data/multi-model-responses/<your-query-dir>
    ```
 
 2. Copy the output and send it to Claude
@@ -307,7 +307,7 @@ Edit `config.json` to:
 ## Output Structure
 
 ```
-multi-model-responses/
+data/multi-model-responses/
 └── 2026-01-12-1430-your-question/
     ├── responses.json      # Raw API responses
     ├── synthesis.md        # Claude's synthesis

@@ -2,11 +2,11 @@
 
 A Claude Code skill for querying multiple AI models (GPT, Claude, Gemini, Grok) in parallel and synthesising their responses. Includes deep research support.
 
-![Ask Many Models in action](amm-skill-question.jpeg)
+![Ask Many Models in action](screenshots/amm-skill-question.jpeg)
 
-![Ask Many Models response](amm-skill-answer.jpeg)
+![Ask Many Models response](screenshots/amm-skill-answer.jpeg)
 
-![Ask Many Models response continued](amm-skill-answer-2.jpeg)
+![Ask Many Models response continued](screenshots/amm-skill-answer-2.jpeg)
 
 ## Usage
 

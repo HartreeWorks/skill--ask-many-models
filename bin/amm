@@ -35,7 +35,7 @@ export NVM_DIR="$HOME/.nvm"
 
 CONFIG_FILE="$SKILL_DIR/config.json"
 DEFAULTS_FILE="$SKILL_DIR/data/user-defaults.json"
-RESPONSES_DIR="$SKILL_DIR/multi-model-responses"
+RESPONSES_DIR="$SKILL_DIR/data/multi-model-responses"
 
 # Check output format preference
 OUTPUT_FORMAT=$(jq -r '.output_format // empty' "$DEFAULTS_FILE" 2>/dev/null)

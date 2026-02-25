@@ -60,7 +60,7 @@ Then map the user's numbers to model IDs.
 ### Step 3: Save image if present
 
 If an image is present in the conversation:
-1. Save it to `/Users/ph/.claude/skills/ask-many-models/multi-model-responses/image-TIMESTAMP.png`
+1. Save it to `/Users/ph/.claude/skills/ask-many-models/data/multi-model-responses/image-TIMESTAMP.png`
 2. Note the path for the `--image` flag
 
 Vision-capable models: gpt-5.2-thinking, claude-4.6-opus-thinking, claude-4.5-sonnet, gemini-3.1-pro, gemini-3-flash
@@ -80,7 +80,7 @@ Run the query:
 ```bash
 cd /Users/ph/.claude/skills/ask-many-models && yarn query \
   --models "<comma-separated-model-ids>" \
-  --live-file "/Users/ph/.claude/skills/ask-many-models/multi-model-responses/$(date +%Y-%m-%d-%H%M)-<slug>.md" \
+  --live-file "/Users/ph/.claude/skills/ask-many-models/data/multi-model-responses/$(date +%Y-%m-%d-%H%M)-<slug>.md" \
   --synthesise \
   [--image "<image-path>"] \
   "<prompt>"

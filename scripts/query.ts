@@ -71,7 +71,7 @@ function generateOutputDir(prompt: string): string {
   const now = new Date();
   const timestamp = now.toISOString().slice(0, 16).replace(/[T:]/g, '-');
   const slug = generateSlug(prompt);
-  return join(SKILL_DIR, 'multi-model-responses', `${timestamp}-${slug}`);
+  return join(SKILL_DIR, 'data', 'multi-model-responses', `${timestamp}-${slug}`);
 }
 
 interface ModelResult {
@@ -1491,7 +1491,7 @@ program
   .description('List recent query outputs')
   .option('-n, --count <number>', 'Number of recent queries to show', '10')
   .action((options: { count: string }) => {
-    const responsesDir = join(SKILL_DIR, 'multi-model-responses');
+    const responsesDir = join(SKILL_DIR, 'data', 'multi-model-responses');
     if (!existsSync(responsesDir)) {
       console.log('No queries found yet.');
       return;

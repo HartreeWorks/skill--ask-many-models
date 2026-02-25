@@ -11,7 +11,7 @@ dist/
 !data/user-defaults.example.json
 
 # Response outputs (can be large)
-multi-model-responses/
+data/multi-model-responses/
 
 # Include config
 !config.json
