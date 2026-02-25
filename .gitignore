@@ -7,8 +7,7 @@ node_modules/
 # Build output
 dist/
 
-# Data files (contain user preferences)
-data/*.json
+# Data example file for public repo
 !data/user-defaults.example.json
 
 # Response outputs (can be large)
@@ -16,3 +15,6 @@ multi-model-responses/
 
 # Include config
 !config.json
+
+# Private local data (not published)
+data/

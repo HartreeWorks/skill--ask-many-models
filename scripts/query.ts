@@ -243,7 +243,7 @@ const VISION_MODELS = [
   'claude-4.6-opus-thinking',
   'claude-4.6-opus',
   'claude-4.5-sonnet',
-  'gemini-3-pro',
+  'gemini-3.1-pro',
   'gemini-3-flash',
 ];
 
