@@ -11,10 +11,10 @@ dist/
 !data/user-defaults.example.json
 
 # Response outputs (can be large)
-data/multi-model-responses/
+data/model-outputs/
 
-# Include config
-!config.json
+# User config overrides (not shipped)
+config.json
 
 # Private local data (not published)
 data/

@@ -82,7 +82,7 @@ Then map user's numbers to model IDs.
 #### Step 3: Check for images
 
 If an image is in the conversation, save it to:
-`/Users/ph/.claude/skills/ask-many-models/data/multi-model-responses/image-TIMESTAMP.png`
+`/Users/ph/.claude/skills/ask-many-models/data/model-outputs/image-TIMESTAMP.png`
 
 #### Step 4: Run the query
 
@@ -97,18 +97,19 @@ Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars
 ```bash
 cd /Users/ph/.claude/skills/ask-many-models && yarn query \
   --models "<model-ids>" \
-  --live-file "/Users/ph/.claude/skills/ask-many-models/data/multi-model-responses/$(date +%Y-%m-%d-%H%M)-<slug>.md" \
   --synthesise \
   --output-format both \
   [--image "<path>"] \
   "<prompt>"
 ```
 
+The script auto-generates an output directory at `data/model-outputs/<timestamp>-<slug>/` containing `results.md`, `results.html`, and individual model responses.
+
 #### Step 5: Open results
 
-Say "Querying: [models]" and open the live file. Check `data/user-defaults.json` for `open_preference`:
-- `"html"` → `open "<live-file-path with .md replaced by .html>"`
-- `"markdown"` (or absent) → `open "<live-file-path>"`
+Say "Querying: [models]" and open the results file. Check `data/user-defaults.json` for `open_preference`:
+- `"html"` → `open "<output-dir>/results.html"`
+- `"markdown"` (or absent) → `open "<output-dir>/results.md"`
 
 ---
 
@@ -183,7 +184,7 @@ yarn query --preset frontier "What are the key considerations for..."
 
 This will:
 - Query all models in the preset in parallel
-- Save responses to `data/multi-model-responses/<timestamp>-<slug>/`
+- Save responses to `data/model-outputs/<timestamp>-<slug>/`
 - Print a summary of successful/failed queries
 
 ### Step 2: Synthesise Responses
@@ -192,7 +193,7 @@ The skill generates a synthesis prompt. To synthesise:
 
 1. Generate the prompt:
    ```bash
-   yarn query synthesise data/multi-model-responses/<your-query-dir>
+   yarn query synthesise data/model-outputs/<your-query-dir>
    ```
 
 2. Copy the output and send it to Claude
@@ -299,18 +300,16 @@ Required keys:
 
 ### Model Configuration
 
-Edit `config.json` to:
-- Add/remove models from presets
-- Adjust timeouts
-- Configure new models as they become available
+Model definitions and presets are in `models.json` (shipped with the skill). To customise, create a `config.json` with just the keys you want to override—it merges on top of `models.json`. See `config.example.json` for the format.
 
 ## Output Structure
 
 ```
-data/multi-model-responses/
+data/model-outputs/
 └── 2026-01-12-1430-your-question/
+    ├── results.md          # Live results + synthesis (markdown)
+    ├── results.html        # Live results + synthesis (HTML)
     ├── responses.json      # Raw API responses
-    ├── synthesis.md        # Claude's synthesis
     └── individual/
         ├── gpt-5.2-thinking.md
         ├── claude-4.6-opus-thinking.md
@@ -376,4 +375,4 @@ The live markdown file updates continuously so you can read responses as they ar
 2. **Use defaults for important questions** where quality matters
 3. **Save synthesis prompts** for consistent formatting
 4. **Check individual responses** when synthesis seems off
-5. **Update model IDs** in config.json as providers release new models
+5. **Override model IDs** via `config.json` as providers release new models

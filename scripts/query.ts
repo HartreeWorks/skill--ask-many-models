@@ -51,10 +51,23 @@ import { notifyQueryComplete, isTerminalNotifierInstalled } from './notify.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = join(__dirname, '..');
 
-// Load config
+// Load config: models.json (shipped) + optional config.json (user overrides)
 function loadConfig(): Config {
-  const configPath = join(SKILL_DIR, 'config.json');
-  return JSON.parse(readFileSync(configPath, 'utf-8'));
+  const modelsPath = join(SKILL_DIR, 'models.json');
+  const base: Config = JSON.parse(readFileSync(modelsPath, 'utf-8'));
+
+  const overridePath = join(SKILL_DIR, 'config.json');
+  if (existsSync(overridePath)) {
+    const overrides = JSON.parse(readFileSync(overridePath, 'utf-8'));
+    return {
+      models: { ...base.models, ...overrides.models },
+      presets: { ...base.presets, ...overrides.presets },
+      defaults: { ...base.defaults, ...overrides.defaults },
+      synthesis_depths: { ...base.synthesis_depths, ...overrides.synthesis_depths },
+    };
+  }
+
+  return base;
 }
 
 // Generate a slug from the prompt
@@ -71,7 +84,7 @@ function generateOutputDir(prompt: string): string {
   const now = new Date();
   const timestamp = now.toISOString().slice(0, 16).replace(/[T:]/g, '-');
   const slug = generateSlug(prompt);
-  return join(SKILL_DIR, 'data', 'multi-model-responses', `${timestamp}-${slug}`);
+  return join(SKILL_DIR, 'data', 'model-outputs', `${timestamp}-${slug}`);
 }
 
 interface ModelResult {
@@ -1060,7 +1073,6 @@ async function runQuery(
     timeout?: number;
     output?: string;
     noSave?: boolean;
-    liveFile?: string;
     image?: string;
     synthesise?: boolean;
     synthesisDepth?: string;
@@ -1126,6 +1138,13 @@ async function runQuery(
     process.exit(1);
   }
 
+  // Generate output dir and live file path early so everything goes in one place
+  const outputDir = options.output || generateOutputDir(prompt);
+  if (!options.noSave) {
+    mkdirSync(join(outputDir, 'individual'), { recursive: true });
+  }
+  const liveFilePath = join(outputDir, 'results.md');
+
   // Split models into tiers: quick/standard/slow vs deep research
   const quickModels = getQuickModels(modelNames, config);
   const deepResearchModels = getDeepResearchModels(modelNames, config);
@@ -1144,9 +1163,9 @@ async function runQuery(
 
   // Create live file early if we have deep research models (to show progress)
   const contextPaths = options.context ? [options.context] : undefined;
-  if (options.liveFile && hasDeepResearch) {
+  if (hasDeepResearch) {
     const allModelsToShow = [...quickModels, ...deepResearchModels];
-    createLiveFile(options.liveFile, prompt, allModelsToShow, options.image, contextPaths);
+    createLiveFile(liveFilePath, prompt, allModelsToShow, options.image, contextPaths);
   }
 
   // Start deep research queries in background (they run for 10-20 min)
@@ -1170,8 +1189,8 @@ async function runQuery(
           modelName,
           onProgress: (progress) => {
             // Update live file with progress
-            if (options.liveFile) {
-              updateDeepResearchProgress(options.liveFile, progress);
+            if (liveFilePath) {
+              updateDeepResearchProgress(liveFilePath, progress);
             }
             // Track progress for console output (keep startTime, only update status and lastUpdate)
             const existing = deepResearchStatus.get(modelName);
@@ -1188,14 +1207,10 @@ async function runQuery(
         deepResearchResults.set(modelName, result);
 
         // Update live file with final result
-        if (options.liveFile) {
-          updateLiveFileWithDeepResearch(options.liveFile, modelName, result);
-        }
+        updateLiveFileWithDeepResearch(liveFilePath, modelName, result);
 
         // Notify on completion
-        if (options.liveFile) {
-          notifyDeepResearchComplete(modelName, result.status, options.liveFile);
-        }
+        notifyDeepResearchComplete(modelName, result.status, liveFilePath);
       })();
 
       deepResearchPromises.push(promise);
@@ -1211,14 +1226,14 @@ async function runQuery(
       prompt: fullPrompt,
       config,
       defaultTimeoutSeconds: timeoutSeconds,
-      liveFilePath: hasDeepResearch ? undefined : options.liveFile, // Only create if no deep research
+      liveFilePath: hasDeepResearch ? undefined : liveFilePath, // Only create if no deep research
       imagePath: options.image,
       outputFormat,
       contextPaths,
 
       // Callback when fast models complete
       onFastModelsComplete: hasSlowModels ? async (fastResults) => {
-        if (!options.synthesise || !options.liveFile) return;
+        if (!options.synthesise) return;
 
         const successfulResults = fastResults.filter(r => r.status === 'success');
         if (successfulResults.length === 0) {
@@ -1232,8 +1247,8 @@ async function runQuery(
             ? 'preliminary—waiting for deep research...'
             : 'preliminary—waiting for slow models...';
           const synthesis = await performSynthesis(prompt, fastResults, depth);
-          updateSynthesisInLiveFile(options.liveFile, synthesis, true, label);
-          syncHtmlFile(options.liveFile, outputFormat);
+          updateSynthesisInLiveFile(liveFilePath, synthesis, true, label);
+          syncHtmlFile(liveFilePath, outputFormat);
         } catch (error) {
           console.error('Preliminary synthesis failed:', error instanceof Error ? error.message : String(error));
         }
@@ -1241,7 +1256,7 @@ async function runQuery(
 
       // Callback when all quick models complete
       onAllModelsComplete: hasSlowModels ? async (allQuickResults) => {
-        if (!options.synthesise || !options.liveFile) return;
+        if (!options.synthesise) return;
 
         // If there's deep research, mark synthesis as preliminary
         if (hasDeepResearch) {
@@ -1250,7 +1265,7 @@ async function runQuery(
             console.log(`\n=== Synthesising ${successfulResults.length} quick model responses (deep research in progress) ===\n`);
             try {
               const synthesis = await performSynthesis(prompt, allQuickResults, depth);
-              updateSynthesisInLiveFile(options.liveFile, synthesis, true, 'preliminary—waiting for deep research...');
+              updateSynthesisInLiveFile(liveFilePath, synthesis, true, 'preliminary—waiting for deep research...');
             } catch (error) {
               console.error('Synthesis failed:', error instanceof Error ? error.message : String(error));
             }
@@ -1262,7 +1277,7 @@ async function runQuery(
             console.log(`\n=== Final synthesis with all ${successfulResults.length} responses ===\n`);
             try {
               const synthesis = await performSynthesis(prompt, allQuickResults, depth);
-              updateSynthesisInLiveFile(options.liveFile, synthesis, false);
+              updateSynthesisInLiveFile(liveFilePath, synthesis, false);
             } catch (error) {
               console.error('Final synthesis failed:', error instanceof Error ? error.message : String(error));
             }
@@ -1272,22 +1287,22 @@ async function runQuery(
     });
 
     // Update live file with quick results if we created it earlier for deep research
-    if (hasDeepResearch && options.liveFile) {
+    if (hasDeepResearch) {
       for (const result of quickResults) {
-        updateLiveFile(options.liveFile, result.model, result);
+        updateLiveFile(liveFilePath, result.model, result);
       }
     }
   }
 
   // Run synthesis for quick models if no slow models and no callbacks fired
-  if (options.synthesise && options.liveFile && quickModels.length > 0 && !hasSlowModels) {
+  if (options.synthesise && quickModels.length > 0 && !hasSlowModels) {
     const successfulResults = quickResults.filter(r => r.status === 'success');
     if (successfulResults.length > 0) {
       try {
         const isPreliminary = hasDeepResearch;
         const label = hasDeepResearch ? 'preliminary—waiting for deep research...' : undefined;
         const synthesis = await performSynthesis(prompt, quickResults, depth, !hasDeepResearch);
-        updateSynthesisInLiveFile(options.liveFile, synthesis, isPreliminary, label);
+        updateSynthesisInLiveFile(liveFilePath, synthesis, isPreliminary, label);
       } catch (error) {
         console.error('Synthesis failed, skipping...');
       }
@@ -1369,13 +1384,13 @@ async function runQuery(
     }
 
     // Final synthesis with all results including deep research
-    if (options.synthesise && options.liveFile) {
+    if (options.synthesise) {
       const successfulResults = allResults.filter(r => r.status === 'success');
       if (successfulResults.length > 0) {
         console.log(`\n=== Final synthesis including deep research (${successfulResults.length} responses) ===\n`);
         try {
           const synthesis = await performSynthesis(prompt, allResults, depth);
-          updateSynthesisInLiveFile(options.liveFile, synthesis, false);
+          updateSynthesisInLiveFile(liveFilePath, synthesis, false);
         } catch (error) {
           console.error('Final synthesis failed:', error instanceof Error ? error.message : String(error));
         }
@@ -1385,14 +1400,11 @@ async function runQuery(
 
   // Save results
   if (!options.noSave) {
-    const outputDir = options.output || generateOutputDir(prompt);
     saveResults(outputDir, prompt, allResults);
   }
 
   // Final HTML sync
-  if (options.liveFile) {
-    syncHtmlFile(options.liveFile, outputFormat);
-  }
+  syncHtmlFile(liveFilePath, outputFormat);
 
   // Print summary
   printSummary(allResults);
@@ -1412,7 +1424,6 @@ program
   .option('-m, --models <list>', 'Comma-separated list of models')
   .option('-t, --timeout <seconds>', 'Timeout per model in seconds', parseInt)
   .option('-o, --output <dir>', 'Output directory for responses')
-  .option('-l, --live-file <path>', 'Markdown file to update live as responses arrive')
   .option('-i, --image <path>', 'Image file to include with the prompt (vision models only)')
   .option('-c, --context <path>', 'Context file or folder to include with the prompt')
   .option('--no-save', 'Do not save responses to disk')
@@ -1491,7 +1502,7 @@ program
   .description('List recent query outputs')
   .option('-n, --count <number>', 'Number of recent queries to show', '10')
   .action((options: { count: string }) => {
-    const responsesDir = join(SKILL_DIR, 'data', 'multi-model-responses');
+    const responsesDir = join(SKILL_DIR, 'data', 'model-outputs');
     if (!existsSync(responsesDir)) {
       console.log('No queries found yet.');
       return;

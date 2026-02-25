@@ -33,9 +33,22 @@ fi
 export NVM_DIR="$HOME/.nvm"
 [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"
 
-CONFIG_FILE="$SKILL_DIR/config.json"
+MODELS_FILE="$SKILL_DIR/models.json"
 DEFAULTS_FILE="$SKILL_DIR/data/user-defaults.json"
-RESPONSES_DIR="$SKILL_DIR/data/multi-model-responses"
+RESPONSES_DIR="$SKILL_DIR/data/model-outputs"
+
+# Merge models.json with optional config.json overrides
+CONFIG_OVERRIDE="$SKILL_DIR/config.json"
+if [[ -f "$CONFIG_OVERRIDE" ]]; then
+    MERGED_CONFIG=$(jq -s '.[0] as $base | .[1] as $over |
+      { models: ($base.models + $over.models),
+        presets: ($base.presets + $over.presets),
+        defaults: ($base.defaults + $over.defaults),
+        synthesis_depths: ($base.synthesis_depths + $over.synthesis_depths) }' \
+      "$MODELS_FILE" "$CONFIG_OVERRIDE")
+else
+    MERGED_CONFIG=$(cat "$MODELS_FILE")
+fi
 
 # Check output format preference
 OUTPUT_FORMAT=$(jq -r '.output_format // empty' "$DEFAULTS_FILE" 2>/dev/null)
@@ -100,13 +113,13 @@ DEFAULT_MODELS=$(jq -r '.default_models[]' "$DEFAULTS_FILE")
 DEFAULT_MODELS_CSV=$(echo "$DEFAULT_MODELS" | tr '\n' ',' | sed 's/,$//')
 
 # Get preset info
-QUICK_MODELS=$(jq -r '.presets.quick.models | join(",")' "$CONFIG_FILE")
-COMPREHENSIVE_MODELS=$(jq -r '.presets.comprehensive.models | join(",")' "$CONFIG_FILE")
-DEEP_RESEARCH_MODELS=$(jq -r '.presets["deep-research"].models | join(",")' "$CONFIG_FILE")
-COMPREHENSIVE_DEEP_MODELS=$(jq -r '.presets["comprehensive-deep"].models | join(",")' "$CONFIG_FILE")
+QUICK_MODELS=$(echo "$MERGED_CONFIG" | jq -r '.presets.quick.models | join(",")')
+COMPREHENSIVE_MODELS=$(echo "$MERGED_CONFIG" | jq -r '.presets.comprehensive.models | join(",")')
+DEEP_RESEARCH_MODELS=$(echo "$MERGED_CONFIG" | jq -r '.presets["deep-research"].models | join(",")')
+COMPREHENSIVE_DEEP_MODELS=$(echo "$MERGED_CONFIG" | jq -r '.presets["comprehensive-deep"].models | join(",")')
 
-# Read all available API models from config.json (exclude browser models)
-ALL_MODELS=$(jq -r '.models | to_entries | map(select(.value.type == "api")) | .[].key' "$CONFIG_FILE")
+# Read all available API models (exclude browser models)
+ALL_MODELS=$(echo "$MERGED_CONFIG" | jq -r '.models | to_entries | map(select(.value.type == "api")) | .[].key')
 
 if [[ "$SKIP_SELECT" == "true" ]]; then
     MODELS_CSV="$DEFAULT_MODELS_CSV"
@@ -314,11 +327,11 @@ SLUG=$(echo "$PROMPT" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed
 if [[ -z "$SLUG" ]]; then
     SLUG="query"
 fi
-LIVE_FILE="$RESPONSES_DIR/${TIMESTAMP}-${SLUG}.md"
+OUTPUT_DIR="$RESPONSES_DIR/${TIMESTAMP}-${SLUG}"
 
 echo ""
 echo "Querying: $MODELS_CSV"
-echo "Output: $LIVE_FILE"
+echo "Output: $OUTPUT_DIR"
 echo ""
 
 # Build the query command as an array to properly handle special characters
@@ -326,7 +339,7 @@ QUERY_ARGS=(
     --cwd "$SKILL_DIR"
     query
     --models "$MODELS_CSV"
-    --live-file "$LIVE_FILE"
+    --output "$OUTPUT_DIR"
 )
 
 if [[ "$SYNTHESISE" == "true" ]]; then
@@ -350,10 +363,9 @@ yarn "${QUERY_ARGS[@]}"
 # Open the appropriate file(s)
 echo ""
 echo "Opening results..."
-HTML_FILE="${LIVE_FILE%.md}.html"
 if [[ "$OUTPUT_FORMAT" == "html" || "$OUTPUT_FORMAT" == "both" ]]; then
-    open "$HTML_FILE"
+    open "$OUTPUT_DIR/results.html"
 fi
 if [[ "$OUTPUT_FORMAT" == "markdown" || "$OUTPUT_FORMAT" == "both" ]]; then
-    open "$LIVE_FILE"
+    open "$OUTPUT_DIR/results.md"
 fi

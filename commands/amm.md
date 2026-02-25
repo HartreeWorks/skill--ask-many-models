@@ -23,7 +23,7 @@ Check if there are any images in the conversation context. If so, note this for 
 
 Read the config files:
 - `/Users/ph/.claude/skills/ask-many-models/data/user-defaults.json`
-- `/Users/ph/.claude/skills/ask-many-models/config.json`
+- `/Users/ph/.claude/skills/ask-many-models/models.json`
 
 Use AskUserQuestion with these preset options (matching the CLI):
 
@@ -60,7 +60,7 @@ Then map the user's numbers to model IDs.
 ### Step 3: Save image if present
 
 If an image is present in the conversation:
-1. Save it to `/Users/ph/.claude/skills/ask-many-models/data/multi-model-responses/image-TIMESTAMP.png`
+1. Save it to `/Users/ph/.claude/skills/ask-many-models/data/model-outputs/image-TIMESTAMP.png`
 2. Note the path for the `--image` flag
 
 Vision-capable models: gpt-5.2-thinking, claude-4.6-opus-thinking, claude-4.5-sonnet, gemini-3.1-pro, gemini-3-flash
@@ -80,19 +80,20 @@ Run the query:
 ```bash
 cd /Users/ph/.claude/skills/ask-many-models && yarn query \
   --models "<comma-separated-model-ids>" \
-  --live-file "/Users/ph/.claude/skills/ask-many-models/data/multi-model-responses/$(date +%Y-%m-%d-%H%M)-<slug>.md" \
   --synthesise \
   [--image "<image-path>"] \
   "<prompt>"
 ```
 
+The script auto-generates an output directory at `data/model-outputs/<timestamp>-<slug>/` containing `results.md`, `results.html`, and individual model responses.
+
 ### Step 5: Confirm and open
 
 1. Say: "Querying: [model list]"
-2. Give the absolute path to the live markdown file
-3. Open it based on `open_preference` in `data/user-defaults.json`:
-   - `"html"` → `open "<live-file-path with .md replaced by .html>"`
-   - `"markdown"` (or absent) → `open "<live-file-path>"`
+2. Give the absolute path to the output directory
+3. Open results based on `open_preference` in `data/user-defaults.json`:
+   - `"html"` → `open "<output-dir>/results.html"`
+   - `"markdown"` (or absent) → `open "<output-dir>/results.md"`
 
 The `--synthesise` flag runs Claude Opus 4.6 with extended thinking to synthesise responses automatically.
 
