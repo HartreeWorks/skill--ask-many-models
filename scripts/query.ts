@@ -1105,7 +1105,7 @@ async function runQuery(
   if (options.models) {
     // Explicit model list
     modelNames = options.models.split(',').map((m) => m.trim());
-    timeoutSeconds = options.timeout || 180;
+    timeoutSeconds = options.timeout || 600;
   } else {
     // Use preset
     const presetName = options.preset || config.defaults.preset;
@@ -1130,7 +1130,7 @@ async function runQuery(
 
     const { apiModels } = getPresetModels(presetName, config);
     modelNames = apiModels;
-    timeoutSeconds = preset.timeout_seconds || options.timeout || 180;
+    timeoutSeconds = preset.timeout_seconds || options.timeout || 600;
   }
 
   if (modelNames.length === 0) {

@@ -3,12 +3,12 @@
     "quick": {
       "description": "Fast responses from efficient models",
       "models": ["gemini-3-flash", "grok-4.1-non-reasoning", "claude-4.5-sonnet"],
-      "timeout_seconds": 60
+      "timeout_seconds": 180
     },
     "comprehensive": {
       "description": "All default models plus GPT-5.2 Pro",
       "models": ["gpt-5.2-thinking", "claude-4.6-opus-thinking", "gemini-3.1-pro", "grok-4.1", "gpt-5.2-pro"],
-      "timeout_seconds": 300
+      "timeout_seconds": 600
     },
     "deep-research": {
       "description": "Deep research (10-20 min per model)",
