@@ -2,7 +2,7 @@
   "models": {
     "my-custom-model": {
       "provider": "openai",
-      "model_id": "gpt-5.2-turbo",
+      "model_id": "gpt-5.4-turbo",
       "display_name": "My Custom Model",
       "type": "api",
       "max_tokens": 16000

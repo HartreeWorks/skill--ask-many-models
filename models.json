@@ -6,41 +6,41 @@
       "timeout_seconds": 180
     },
     "comprehensive": {
-      "description": "All default models plus GPT-5.2 Pro",
-      "models": ["gpt-5.2-thinking", "claude-4.6-opus-thinking", "gemini-3.1-pro", "grok-4.1", "gpt-5.2-pro"],
+      "description": "All default models plus GPT-5.4 Pro",
+      "models": ["gpt-5.4-thinking", "claude-4.6-opus-thinking", "gemini-3.1-pro", "grok-4.1", "gpt-5.4-pro"],
       "timeout_seconds": 600
     },
     "deep-research": {
       "description": "Deep research (10-20 min per model)",
-      "models": ["openai-deep-research", "gemini-deep-research", "gpt-5.2-pro"],
+      "models": ["openai-deep-research", "gemini-deep-research", "gpt-5.4-pro"],
       "timeout_seconds": 3600
     },
     "comprehensive-deep": {
       "description": "Quick models + deep research",
-      "models": ["gpt-5.2-thinking", "claude-4.6-opus-thinking", "gemini-3.1-pro", "grok-4.1", "openai-deep-research", "gemini-deep-research"],
+      "models": ["gpt-5.4-thinking", "claude-4.6-opus-thinking", "gemini-3.1-pro", "grok-4.1", "openai-deep-research", "gemini-deep-research"],
       "timeout_seconds": 3600
     }
   },
   "models": {
-    "gpt-5.2": {
+    "gpt-5.4": {
       "provider": "openai",
-      "model_id": "gpt-5.2",
-      "display_name": "GPT-5.2",
+      "model_id": "gpt-5.4",
+      "display_name": "GPT-5.4",
       "type": "api",
       "max_tokens": 16000
     },
-    "gpt-5.2-thinking": {
+    "gpt-5.4-thinking": {
       "provider": "openai",
-      "model_id": "gpt-5.2",
-      "display_name": "GPT-5.2 Thinking",
+      "model_id": "gpt-5.4",
+      "display_name": "GPT-5.4 Thinking",
       "type": "api",
       "max_tokens": 32000,
       "reasoning": true
     },
-    "gpt-5.2-pro": {
+    "gpt-5.4-pro": {
       "provider": "openai",
-      "model_id": "gpt-5.2-pro",
-      "display_name": "GPT-5.2 Pro",
+      "model_id": "gpt-5.4-pro",
+      "display_name": "GPT-5.4 Pro",
       "type": "api",
       "max_tokens": 32000,
       "slow": true,
@@ -96,11 +96,11 @@
       "type": "api",
       "max_tokens": 16000
     },
-    "gpt-5.2-pro-browser": {
+    "gpt-5.4-pro-browser": {
       "provider": "openai",
-      "display_name": "GPT-5.2 Pro (Browser)",
+      "display_name": "GPT-5.4 Pro (Browser)",
       "type": "browser",
-      "url": "https://chatgpt.com/?model=gpt-5.2-pro",
+      "url": "https://chatgpt.com/?model=gpt-5.4-pro",
       "requires_browser": true
     },
     "openai-deep-research": {

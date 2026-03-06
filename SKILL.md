@@ -48,10 +48,10 @@ Ask: "I've drafted a prompt capturing our discussion. Please review and let me k
 ```
 Which models should I query?
 
-1. ⚡ Defaults - GPT-5.2 Thinking, Claude 4.6 Opus Thinking, Gemini 3.1 Pro, Grok 4.1 (Recommended)
+1. ⚡ Defaults - GPT-5.4 Thinking, Claude 4.6 Opus Thinking, Gemini 3.1 Pro, Grok 4.1 (Recommended)
 2. 🚀 Quick - Gemini 3 Flash, Grok 4.1 Fast, Claude 4.5 Sonnet (~10s)
-3. 📊 Comprehensive - Defaults + GPT-5.2 Pro (slow, extra compute)
-4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.2 Pro (10-20 min)
+3. 📊 Comprehensive - Defaults + GPT-5.4 Pro (slow, extra compute)
+4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.4 Pro (10-20 min)
 5. 🔧 Pick models - Choose individual models
 
 Enter a number (1-5):
@@ -61,15 +61,15 @@ If user selects **5 (Pick models)**, print this list and ask for comma-separated
 
 ```
 Available models:
-1. gpt-5.2-thinking (default)
+1. gpt-5.4-thinking (default)
 2. claude-4.6-opus-thinking (default)
 3. gemini-3.1-pro (default)
 4. grok-4.1 (default)
 5. gemini-3-flash
 6. grok-4.1-non-reasoning
 7. claude-4.5-sonnet
-8. gpt-5.2
-9. gpt-5.2-pro (slow, extra compute)
+8. gpt-5.4
+9. gpt-5.4-pro (slow, extra compute)
 10. claude-4.6-opus
 11. openai-deep-research (10-20 min)
 12. gemini-deep-research (10-20 min)
@@ -87,10 +87,10 @@ If an image is in the conversation, save it to:
 #### Step 4: Run the query
 
 Map selection to model IDs:
-- **Defaults**: `gpt-5.2-thinking,claude-4.6-opus-thinking,gemini-3.1-pro,grok-4.1`
+- **Defaults**: `gpt-5.4-thinking,claude-4.6-opus-thinking,gemini-3.1-pro,grok-4.1`
 - **Quick**: `gemini-3-flash,grok-4.1-non-reasoning,claude-4.5-sonnet`
-- **Comprehensive**: `gpt-5.2-thinking,claude-4.6-opus-thinking,gemini-3.1-pro,grok-4.1,gpt-5.2-pro`
-- **Deep Research**: `openai-deep-research,gemini-deep-research,gpt-5.2-pro`
+- **Comprehensive**: `gpt-5.4-thinking,claude-4.6-opus-thinking,gemini-3.1-pro,grok-4.1,gpt-5.4-pro`
+- **Deep Research**: `openai-deep-research,gemini-deep-research,gpt-5.4-pro`
 
 Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars).
 
@@ -145,7 +145,7 @@ Paste an image into your message along with your question to have vision-capable
 /amm "What's in this image?" [paste image]
 ```
 
-Vision-capable models: GPT-5.2 Thinking, Claude 4.6 Opus Thinking, Claude 4.5 Sonnet, Gemini 3.1 Pro, Gemini 3 Flash
+Vision-capable models: GPT-5.4 Thinking, Claude 4.6 Opus Thinking, Claude 4.5 Sonnet, Gemini 3.1 Pro, Gemini 3 Flash
 
 Models without vision support will receive just the text prompt with a note that an image was provided.
 
@@ -207,7 +207,7 @@ Alternatively, read the individual responses from the `individual/` subdirectory
 | Preset | Models | Use Case |
 |--------|--------|----------|
 | `quick` | Gemini 3 Flash, Grok 4.1 (Fast), Claude 4.5 Sonnet | Fast responses (~10s) |
-| `comprehensive` | Defaults + GPT-5.2 Pro | Thorough coverage (~60s) |
+| `comprehensive` | Defaults + GPT-5.4 Pro | Thorough coverage (~60s) |
 | `deep-research` | OpenAI Deep Research, Gemini Deep Research | In-depth research (API, 10-20 min) |
 | `comprehensive-deep` | Quick models + deep research | Best of both worlds |
 
@@ -297,7 +297,7 @@ data/model-outputs/
     ├── results.html        # Live results + synthesis (HTML)
     ├── responses.json      # Raw API responses
     └── individual/
-        ├── gpt-5.2-thinking.md
+        ├── gpt-5.4-thinking.md
         ├── claude-4.6-opus-thinking.md
         ├── gemini-3.1-pro.md
         └── grok-4.md
@@ -309,13 +309,13 @@ data/model-outputs/
 
 | Model ID | Display Name | Provider | Vision |
 |----------|--------------|----------|--------|
-| gpt-5.2-thinking | GPT-5.2 Thinking | OpenAI | ✓ |
+| gpt-5.4-thinking | GPT-5.4 Thinking | OpenAI | ✓ |
 | claude-4.6-opus-thinking | Claude 4.6 Opus Thinking | Anthropic | ✓ |
 | grok-4.1 | Grok 4.1 (Reasoning) | xAI | |
 | gemini-3.1-pro | Gemini 3.1 Pro | Google | ✓ |
 | gemini-3-flash | Gemini 3 Flash | Google | ✓ |
-| gpt-5.2 | GPT-5.2 | OpenAI | ✓ |
-| gpt-5.2-pro | GPT-5.2 Pro | OpenAI | ✓ |
+| gpt-5.4 | GPT-5.4 | OpenAI | ✓ |
+| gpt-5.4-pro | GPT-5.4 Pro | OpenAI | ✓ |
 | claude-4.6-opus | Claude 4.6 Opus | Anthropic | ✓ |
 | claude-4.5-sonnet | Claude 4.5 Sonnet | Anthropic | ✓ |
 | grok-4.1-non-reasoning | Grok 4.1 (Fast) | xAI | |
@@ -338,7 +338,7 @@ Desktop notifications via terminal-notifier:
 
 ## Slow Models & Progressive Synthesis
 
-Some models (like GPT-5.2 Pro) use extra compute and can take 10-60 minutes for complex queries. These are marked as "slow" in the config.
+Some models (like GPT-5.4 Pro) use extra compute and can take 10-60 minutes for complex queries. These are marked as "slow" in the config.
 
 When slow models are included:
 1. **Progress display** shows real-time status of all models with ✓/✗/◐ icons
