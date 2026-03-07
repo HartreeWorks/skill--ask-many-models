@@ -288,6 +288,8 @@ Required keys:
 
 Model definitions and presets are in `models.json` (shipped with the skill). To customise, create a `config.json` with just the keys you want to override—it merges on top of `models.json`. See `config.example.json` for the format.
 
+**When updating model IDs**, also update the `VISION_MODELS` array in `scripts/query.ts` — it has a hardcoded list of vision-capable model keys that must match `models.json`.
+
 ## Output Structure
 
 ```
