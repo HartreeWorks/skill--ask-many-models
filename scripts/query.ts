@@ -332,7 +332,7 @@ async function queryModel(
                        ext === '.gif' ? 'image/gif' :
                        ext === '.webp' ? 'image/webp' : 'image/jpeg';
 
-      result = await generateText({
+      const imageOptions: Parameters<typeof generateText>[0] = {
         model,
         messages: [{
           role: 'user',
@@ -344,7 +344,21 @@ async function queryModel(
         tools,
         maxOutputTokens: maxTokens,
         abortSignal: controller.signal,
-      });
+      };
+
+      // Enable extended thinking for Anthropic reasoning models
+      if (modelConfig?.provider === 'anthropic' && modelConfig?.reasoning) {
+        imageOptions.providerOptions = {
+          anthropic: {
+            thinking: {
+              type: 'enabled',
+              budgetTokens: 10000,
+            },
+          },
+        };
+      }
+
+      result = await generateText(imageOptions);
     } else if (hasImage && !supportsVision) {
       // Model doesn't support vision - add note to prompt
       const modifiedPrompt = `[Note: An image was provided but ${modelName} doesn't support vision.]\n\n${prompt}`;
@@ -357,13 +371,27 @@ async function queryModel(
       });
     } else {
       // Text-only query
-      result = await generateText({
+      const generateOptions: Parameters<typeof generateText>[0] = {
         model,
         prompt,
         tools,
         maxOutputTokens: maxTokens,
         abortSignal: controller.signal,
-      });
+      };
+
+      // Enable extended thinking for Anthropic reasoning models
+      if (modelConfig?.provider === 'anthropic' && modelConfig?.reasoning) {
+        generateOptions.providerOptions = {
+          anthropic: {
+            thinking: {
+              type: 'enabled',
+              budgetTokens: 10000,
+            },
+          },
+        };
+      }
+
+      result = await generateText(generateOptions);
     }
 
     clearTimeout(timeout);

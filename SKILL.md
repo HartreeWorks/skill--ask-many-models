@@ -34,14 +34,17 @@ When invoked after a conversation, ALWAYS draft a comprehensive prompt that:
 
 **IMPORTANT**: Err on the side of including MORE context than seems necessary. Other models don't have access to this conversation—they only see the prompt you write. A prompt that seems "too long" to you is usually about right.
 
-Save the drafted prompt to a file and show it to the user for approval before proceeding:
+Save the drafted prompt to a file and show it to the user for approval before proceeding. **Use a unique filename** to avoid collisions with other concurrent sessions (e.g. include a timestamp or slug):
 ```bash
-echo "<prompt>" > /tmp/amm-prompt-draft.md && open /tmp/amm-prompt-draft.md
+echo "<prompt>" > /tmp/amm-prompt-draft-$(date +%s).md && open /tmp/amm-prompt-draft-$(date +%s).md
 ```
+Or use a descriptive slug: `/tmp/amm-prompt-draft-<slug>.md`
 
 Ask: "I've drafted a prompt capturing our discussion. Please review and let me know if you'd like any changes, or say 'go' to proceed."
 
 #### Step 2: Model selection
+
+**MANDATORY**: You MUST always present the model selection menu and wait for the user's choice before running any queries. Never skip this step or assume which models the user wants, even if they provided a prompt file path or seem to want a quick answer. The user always chooses.
 
 **Do NOT use AskUserQuestion for model selection** (it has a 4-option limit which is too restrictive). Instead, print this menu and wait for user input:
 
