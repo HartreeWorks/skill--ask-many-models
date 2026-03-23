@@ -99,7 +99,7 @@ export async function queryOpenAIDeepResearch(config: DeepResearchConfig): Promi
 
   try {
     // Start the research with background mode enabled
-    let response = await client.responses.create({
+    const createRequest = () => client.responses.create({
       model: config.modelConfig.model_id,
       input: [
         {
@@ -115,6 +115,28 @@ export async function queryOpenAIDeepResearch(config: DeepResearchConfig): Promi
       tools: [{ type: 'web_search_preview' }],
       background: true,
     });
+
+    let response: Awaited<ReturnType<typeof createRequest>>;
+    try {
+      response = await createRequest();
+    } catch (submitError) {
+      const errorMsg = submitError instanceof Error ? submitError.message : String(submitError);
+      if (/rate.?limit/i.test(errorMsg)) {
+        // Parse wait duration from "try again in Xms" or "try again in Xs"
+        const waitMatch = errorMsg.match(/try again in (\d+)(ms|s)/i);
+        let waitMs = 5000; // default 5s
+        if (waitMatch) {
+          waitMs = parseInt(waitMatch[1], 10);
+          if (waitMatch[2] === 's') waitMs *= 1000;
+        }
+        waitMs += 1000; // buffer
+        console.log(`  ⏳ ${config.modelName}: Rate limited, retrying in ${(waitMs / 1000).toFixed(1)}s...`);
+        await sleep(waitMs);
+        response = await createRequest();
+      } else {
+        throw submitError;
+      }
+    }
 
     const requestId = response.id;
     const pollInterval = config.modelConfig.poll_interval_ms || 10000;
