@@ -57,8 +57,12 @@ Which models should I query?
 4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.4 Pro (10-20 min)
 5. 🔧 Pick models - Choose individual models
 
+_(To use a custom system prompt, type SYS after the number, e.g. "1 SYS")_
+
 Enter a number (1-5):
 ```
+
+**Parsing the input**: The user may type just a number (e.g. `1`) or a number followed by `SYS` (e.g. `1 SYS`, `2 sys`, `3 SYS`). Parse the number for model selection. If `SYS` is present (case-insensitive), proceed to Step 2b after resolving models.
 
 If user selects **5 (Pick models)**, print this list and ask for comma-separated numbers:
 
@@ -77,10 +81,38 @@ Available models:
 11. openai-deep-research (10-20 min)
 12. gemini-deep-research (10-20 min)
 
-Enter numbers (e.g. 1,2,5):
+Enter numbers (e.g. 1,2,5). Add SYS for a custom system prompt (e.g. "1,3 SYS"):
 ```
 
-Then map user's numbers to model IDs.
+Then map user's numbers to model IDs. Check for `SYS` in the input as described above.
+
+#### Step 2b: System prompt (only if user typed SYS)
+
+Only run this step if the user included `SYS` in their model selection input. Otherwise skip to Step 3.
+
+1. **Check for saved prompts** in `/Users/ph/.claude/skills/ask-many-models/data/system-prompts.json`
+2. If saved prompts exist, show them with letter labels:
+
+```
+Saved system prompts:
+
+  A) Expert VC analyst — You are an experienced venture capital...
+  B) Devil's advocate — Challenge every assumption...
+
+  N) Write a new system prompt
+
+Select (A/B/.../N):
+```
+
+3. If the user selects a letter, use that saved prompt's content as the system prompt.
+4. If the user selects **N**, ask them to type/paste a system prompt. Then ask if they want to save it:
+   - If yes, ask for a name, then add it to `system-prompts.json` using:
+     ```bash
+     jq --arg name "<name>" --arg content "<content>" '.prompts += [{"name": $name, "content": $content}]' /Users/ph/.claude/skills/ask-many-models/data/system-prompts.json > /tmp/amm-sysprompts-tmp.json && mv /tmp/amm-sysprompts-tmp.json /Users/ph/.claude/skills/ask-many-models/data/system-prompts.json
+     ```
+5. Save the system prompt to a temp file and pass it via `--system-prompt <path>` in Step 4.
+
+If the user presses Enter (empty input), skip — no system prompt.
 
 #### Step 3: Check for images
 
@@ -103,6 +135,7 @@ cd /Users/ph/.claude/skills/ask-many-models && yarn query \
   --synthesise \
   --output-format both \
   [--image "<path>"] \
+  [--system-prompt "<path>"] \
   "<prompt>"
 ```
 
@@ -116,25 +149,15 @@ Say "Querying: [models]" and open the results file. Check `data/user-defaults.js
 
 ---
 
-## Reference Documentation
+## Reference documentation
 
-### Terminal CLI (Fastest)
+### Claude usage
 
-Run `amm` directly from your terminal for instant model selection:
-
-```bash
-amm "What are the key considerations for X?"
-```
-
-Options:
-- `--quick` or `-q` - Skip model selection, use defaults
-- `--no-synthesise` - Skip the synthesis step
-
-**Default models** are configured in `data/user-defaults.json`.
+This skill is intended to be used from Claude, either via natural language or the `/amm` command wrapper. Do not instruct users to install or run a standalone `amm` terminal command.
 
 ### Output format
 
-Results can be output as markdown, HTML, or both. The preference is stored in `data/user-defaults.json` under `output_format`. On first run via `amm`, you'll be prompted to choose. The HTML version uses serif typography optimised for long-form reading.
+Results can be output as markdown, HTML, or both. The preference is stored in `data/user-defaults.json` under `output_format`. The HTML version uses serif typography optimised for long-form reading.
 
 - `--output-format markdown` — markdown only (default for script invocation)
 - `--output-format html` — HTML only
@@ -152,58 +175,9 @@ Vision-capable models: GPT-5.4 Thinking, Claude 4.6 Opus Thinking, Claude 4.5 So
 
 Models without vision support will receive just the text prompt with a note that an image was provided.
 
-### Direct Script Invocation
+### Internal implementation
 
-Run the query script directly:
-
-```bash
-cd /Users/ph/.claude/skills/ask-many-models
-yarn query "Your question here"
-```
-
-Options:
-- `--preset <name>` - Use a preset: `quick`, `comprehensive`
-- `--models <list>` - Specify models: `gpt-4o,gemini-2.0-flash`
-- `--timeout <seconds>` - Timeout per model (default: 180)
-- `--image <path>` - Include an image file for vision models
-
-### Available Commands
-
-```bash
-yarn query presets    # List available presets
-yarn query models     # List available models
-yarn query list       # List recent queries
-yarn query show <dir> # Display responses from a query
-yarn query synthesise <dir> # Generate synthesis prompt
-```
-
-## Workflow
-
-### Step 1: Query Models
-
-```bash
-yarn query --preset frontier "What are the key considerations for..."
-```
-
-This will:
-- Query all models in the preset in parallel
-- Save responses to `data/model-outputs/<timestamp>-<slug>/`
-- Print a summary of successful/failed queries
-
-### Step 2: Synthesise Responses
-
-The skill generates a synthesis prompt. To synthesise:
-
-1. Generate the prompt:
-   ```bash
-   yarn query synthesise data/model-outputs/<your-query-dir>
-   ```
-
-2. Copy the output and send it to Claude
-
-3. Save Claude's synthesis to the query directory as `synthesis.md`
-
-Alternatively, read the individual responses from the `individual/` subdirectory and ask Claude directly to synthesise them.
+The skill currently runs through the local `yarn query` tooling in this directory. Treat that as an implementation detail for maintainers, not a separate user-facing interface.
 
 ## Model Presets
 
@@ -220,11 +194,7 @@ Deep research models (OpenAI o3-deep-research and Gemini Deep Research) conduct 
 
 ### Using Deep Research
 
-From the `amm` CLI, select "🔬 Deep Research" or "🔬📊 Comprehensive + Deep Research":
-
-```bash
-amm "What are the latest developments in quantum computing?"
-```
+From Claude, choose the "Deep Research" option during model selection.
 
 When deep research is selected:
 1. **Duration warning** is shown (10-20 minutes expected)

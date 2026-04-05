@@ -10,9 +10,9 @@ A Claude Code skill for querying multiple AI models (GPT, Claude, Gemini, Grok) 
 
 ## Usage
 
-**Within Claude Code:** Just say "Ask many models: [your question]" and Claude will handle the rest.
+**Within Claude Code:** Say "Ask many models: [your question]" and Claude will handle the rest.
 
-**From the command line:** Type `amm` and press enter.
+**Claude command:** Use `/amm [your question]` if you want an explicit command form inside Claude.
 
 **Discussion workflow:** See below.
 

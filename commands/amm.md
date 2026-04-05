@@ -11,8 +11,6 @@ arguments:
 
 Query multiple AI models with the given prompt and synthesise their responses.
 
-**Tip**: For faster execution without images, run `amm "prompt"` directly in terminal.
-
 ## Execution Steps
 
 ### Step 1: Check for images
@@ -25,15 +23,16 @@ Read the config files:
 - `/Users/ph/.claude/skills/ask-many-models/data/user-defaults.json`
 - `/Users/ph/.claude/skills/ask-many-models/models.json`
 
-Use AskUserQuestion with these preset options (matching the CLI):
+Use AskUserQuestion with these preset options:
 
 - **Header**: "Models"
 - **Question**: "Which models should I query?"
 - **Options**:
   1. "Defaults" - GPT-5.4 Thinking, Claude 4.6 Opus Thinking, Gemini 3.1 Pro, Grok 4.1 (Recommended)
   2. "Quick" - Gemini 3 Flash, Grok 4.1 Fast, Claude 4.5 Sonnet (~10s)
-  3. "Deep Research" - Defaults + OpenAI/Gemini deep research (10-20 min)
-  4. "Pick models" - Choose individual models
+  3. "Comprehensive" - Defaults + GPT-5.4 Pro (slow, extra compute)
+  4. "Deep Research" - OpenAI/Gemini deep research + GPT-5.4 Pro (10-20 min)
+  5. "Pick models" - Choose individual models
 
 If user selects "Pick models", print this numbered list and ask them to type the numbers they want:
 
@@ -52,10 +51,12 @@ Available models:
 11. openai-deep-research (10-20 min)
 12. gemini-deep-research (10-20 min)
 
-Enter numbers (e.g. 1,2,5):
+_(To use a custom system prompt, type SYS after the number, e.g. "1 SYS")_
+
+Enter numbers (e.g. 1,2,5). Add SYS for a custom system prompt (e.g. "1,3 SYS"):
 ```
 
-Then map the user's numbers to model IDs.
+Then map the user's numbers to model IDs. Check for `SYS` in the input; if present, run the system prompt flow from `SKILL.md` and pass the saved file via `--system-prompt`.
 
 ### Step 3: Save image if present
 
@@ -70,7 +71,8 @@ Vision-capable models: gpt-5.4-thinking, claude-4.6-opus-thinking, claude-4.5-so
 Map the selection to models:
 - **Defaults**: `gpt-5.4-thinking,claude-4.6-opus-thinking,gemini-3.1-pro,grok-4.1`
 - **Quick**: `gemini-3-flash,grok-4.1-non-reasoning,claude-4.5-sonnet`
-- **Deep Research**: `gpt-5.4-thinking,claude-4.6-opus-thinking,gemini-3.1-pro,grok-4.1,openai-deep-research,gemini-deep-research`
+- **Comprehensive**: `gpt-5.4-thinking,claude-4.6-opus-thinking,gemini-3.1-pro,grok-4.1,gpt-5.4-pro`
+- **Deep Research**: `openai-deep-research,gemini-deep-research,gpt-5.4-pro`
 - **Pick models**: Use the selected model IDs
 
 Generate a slug from the prompt (lowercase, replace non-alphanumeric with hyphens, max 50 chars).
@@ -81,7 +83,9 @@ Run the query:
 cd /Users/ph/.claude/skills/ask-many-models && yarn query \
   --models "<comma-separated-model-ids>" \
   --synthesise \
+  --output-format both \
   [--image "<image-path>"] \
+  [--system-prompt "<path>"] \
   "<prompt>"
 ```
 
@@ -105,7 +109,8 @@ The `--synthesise` flag runs Claude Opus 4.6 with extended thinking to synthesis
 |--------|--------|-------|
 | Defaults | gpt-5.4-thinking, claude-4.6-opus-thinking, gemini-3.1-pro, grok-4.1 | ~30s |
 | Quick | gemini-3-flash, grok-4.1-non-reasoning, claude-4.5-sonnet | ~10s |
-| Deep Research | Defaults + openai-deep-research, gemini-deep-research | 10-20 min |
+| Comprehensive | Defaults + gpt-5.4-pro | ~60s |
+| Deep Research | openai-deep-research, gemini-deep-research, gpt-5.4-pro | 10-20 min |
 
 ### All Models
 

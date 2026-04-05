@@ -295,7 +295,8 @@ async function queryModel(
   prompt: string,
   config: Config,
   timeoutMs: number,
-  imagePath?: string
+  imagePath?: string,
+  systemPrompt?: string
 ): Promise<ModelResult> {
   const startTime = Date.now();
 
@@ -334,6 +335,7 @@ async function queryModel(
 
       const imageOptions: Parameters<typeof generateText>[0] = {
         model,
+        ...(systemPrompt ? { system: systemPrompt } : {}),
         messages: [{
           role: 'user',
           content: [
@@ -364,6 +366,7 @@ async function queryModel(
       const modifiedPrompt = `[Note: An image was provided but ${modelName} doesn't support vision.]\n\n${prompt}`;
       result = await generateText({
         model,
+        ...(systemPrompt ? { system: systemPrompt } : {}),
         prompt: modifiedPrompt,
         tools,
         maxOutputTokens: maxTokens,
@@ -373,6 +376,7 @@ async function queryModel(
       // Text-only query
       const generateOptions: Parameters<typeof generateText>[0] = {
         model,
+        ...(systemPrompt ? { system: systemPrompt } : {}),
         prompt,
         tools,
         maxOutputTokens: maxTokens,
@@ -685,7 +689,8 @@ function createLiveFile(
   prompt: string,
   modelNames: string[],
   imagePath?: string,
-  contextPaths?: string[]
+  contextPaths?: string[],
+  systemPromptPreview?: string
 ): void {
   const now = new Date().toLocaleString('en-GB', { timeZone: 'Europe/Paris' });
   const outputDir = dirname(filePath);
@@ -712,6 +717,10 @@ function createLiveFile(
       content += `- [${fileName}](${ctxPath})\n`;
     }
     content += `\n`;
+  }
+
+  if (systemPromptPreview) {
+    content += `**System prompt:** ${systemPromptPreview}\n\n`;
   }
 
   if (imagePath) {
@@ -762,6 +771,7 @@ interface QueryModelsOptions {
   defaultTimeoutSeconds: number;
   liveFilePath?: string;
   imagePath?: string;
+  systemPrompt?: string;
   contextPaths?: string[];
   outputFormat?: OutputFormat;
   onFastModelsComplete?: (results: ModelResult[]) => Promise<void>;
@@ -776,6 +786,7 @@ async function queryModelsWithProgress(options: QueryModelsOptions): Promise<Mod
     defaultTimeoutSeconds,
     liveFilePath,
     imagePath,
+    systemPrompt,
     contextPaths,
     outputFormat = 'markdown',
     onFastModelsComplete,
@@ -798,7 +809,8 @@ async function queryModelsWithProgress(options: QueryModelsOptions): Promise<Mod
 
   // Create live file if specified
   if (liveFilePath) {
-    createLiveFile(liveFilePath, prompt, modelNames, imagePath, contextPaths);
+    const sysPreview = systemPrompt ? truncateToWords(systemPrompt, 20) : undefined;
+    createLiveFile(liveFilePath, prompt, modelNames, imagePath, contextPaths, sysPreview);
   }
 
   // Start progress display
@@ -815,7 +827,7 @@ async function queryModelsWithProgress(options: QueryModelsOptions): Promise<Mod
 
     tracker.setStatus(modelName, 'querying');
 
-    const result = await queryModel(modelName, prompt, config, timeoutMs, imagePath);
+    const result = await queryModel(modelName, prompt, config, timeoutMs, imagePath, systemPrompt);
     results.set(modelName, result);
 
     // Update status
@@ -890,14 +902,16 @@ async function queryModels(
 function saveResults(
   outputDir: string,
   prompt: string,
-  results: ModelResult[]
+  results: ModelResult[],
+  systemPrompt?: string
 ): void {
   // Create directories
   mkdirSync(join(outputDir, 'individual'), { recursive: true });
 
   // Save raw JSON
-  const responsesJson = {
+  const responsesJson: Record<string, unknown> = {
     prompt,
+    ...(systemPrompt ? { systemPrompt } : {}),
     timestamp: new Date().toISOString(),
     results,
   };
@@ -1069,6 +1083,43 @@ function appendSynthesisToLiveFile(filePath: string, synthesis: string): void {
   updateSynthesisInLiveFile(filePath, synthesis, false);
 }
 
+// Rebuild results.md with complete data after all models finish.
+// The live file may have stale placeholders if a model update regex didn't match
+// or if the process was interrupted. This ensures the final file is authoritative.
+function writeFinalResults(
+  filePath: string,
+  results: ModelResult[]
+): void {
+  if (!existsSync(filePath)) return;
+
+  let content = readFileSync(filePath, 'utf-8');
+
+  // Extract header+synthesis (everything before the first model section)
+  // Model sections start with "\n# <name>\n\n---\n\n"
+  const firstModelIndex = content.search(/\n# (?!Multi-Model Query|Synthesis)[^\n]+\n\n---\n/);
+  const header = firstModelIndex >= 0 ? content.slice(0, firstModelIndex) : content;
+
+  // Rebuild model sections from allResults
+  let modelSections = '';
+  for (const result of results) {
+    modelSections += `\n# ${result.model}\n\n---\n\n`;
+    if (result.status === 'success') {
+      const normalisedResponse = normaliseHeadings(result.response || '');
+      modelSections += normalisedResponse;
+      modelSections += `\n\n_Latency: ${((result.latencyMs || 0) / 1000).toFixed(1)}s`;
+      if (result.tokensUsed) {
+        modelSections += ` | Tokens: ${result.tokensUsed}`;
+      }
+      modelSections += `_\n\n`;
+    } else {
+      modelSections += `**Error:** ${result.error}\n\n`;
+    }
+  }
+
+  const finalContent = header + modelSections;
+  writeFileSync(filePath, finalContent);
+}
+
 // Print summary of results
 function printSummary(results: ModelResult[]): void {
   console.log('\n\x1b[1m📊 Results Summary\x1b[0m\n');
@@ -1106,6 +1157,7 @@ async function runQuery(
     synthesise?: boolean;
     synthesisDepth?: string;
     context?: string;
+    systemPrompt?: string;
     outputFormat?: string;
   }
 ): Promise<void> {
@@ -1124,6 +1176,18 @@ async function runQuery(
     contextContent = readContext(options.context);
     if (contextContent) {
       console.log(`Loaded context from: ${options.context}`);
+    }
+  }
+
+  // Load system prompt if provided
+  let systemPrompt = '';
+  if (options.systemPrompt) {
+    if (existsSync(options.systemPrompt)) {
+      systemPrompt = readFileSync(options.systemPrompt, 'utf-8').trim();
+      console.log(`System prompt loaded (${systemPrompt.length} chars)`);
+    } else {
+      console.error(`System prompt file not found: ${options.systemPrompt}`);
+      process.exit(1);
     }
   }
 
@@ -1194,7 +1258,8 @@ async function runQuery(
   const contextPaths = options.context ? [options.context] : undefined;
   if (hasDeepResearch) {
     const allModelsToShow = [...quickModels, ...deepResearchModels];
-    createLiveFile(liveFilePath, prompt, allModelsToShow, options.image, contextPaths);
+    const sysPreview = systemPrompt ? truncateToWords(systemPrompt, 20) : undefined;
+    createLiveFile(liveFilePath, prompt, allModelsToShow, options.image, contextPaths, sysPreview);
   }
 
   // Start deep research queries in background (they run for 10-20 min)
@@ -1257,6 +1322,7 @@ async function runQuery(
       defaultTimeoutSeconds: timeoutSeconds,
       liveFilePath: hasDeepResearch ? undefined : liveFilePath, // Only create if no deep research
       imagePath: options.image,
+      systemPrompt: systemPrompt || undefined,
       outputFormat,
       contextPaths,
 
@@ -1429,8 +1495,11 @@ async function runQuery(
 
   // Save results
   if (!options.noSave) {
-    saveResults(outputDir, prompt, allResults);
+    saveResults(outputDir, prompt, allResults, systemPrompt || undefined);
   }
+
+  // Rebuild results.md from complete data (fixes stale placeholders from live updates)
+  writeFinalResults(liveFilePath, allResults);
 
   // Final HTML sync
   syncHtmlFile(liveFilePath, outputFormat);
@@ -1455,6 +1524,7 @@ program
   .option('-o, --output <dir>', 'Output directory for responses')
   .option('-i, --image <path>', 'Image file to include with the prompt (vision models only)')
   .option('-c, --context <path>', 'Context file or folder to include with the prompt')
+  .option('--system-prompt <path>', 'File containing a system prompt to use for all models')
   .option('--no-save', 'Do not save responses to disk')
   .option('-s, --synthesise', 'Run automatic synthesis after queries complete')
   .option('--synthesis-depth <level>', 'Synthesis depth: brief, executive, full', 'executive')
