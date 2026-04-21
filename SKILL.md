@@ -129,17 +129,70 @@ Map selection to model IDs:
 
 Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars).
 
+Run the query **without** `--synthesise` — synthesis happens in Step 4b using an in-session subagent so it rides Peter's existing Max quota instead of billing the Anthropic API:
+
 ```bash
 cd /Users/ph/.claude/skills/ask-many-models && yarn query \
   --models "<model-ids>" \
-  --synthesise \
   --output-format both \
   [--image "<path>"] \
   [--system-prompt "<path>"] \
   "<prompt>"
 ```
 
-The script auto-generates an output directory at `data/model-outputs/<timestamp>-<slug>/` containing `results.md`, `results.html`, and individual model responses.
+The script prints the auto-generated output directory path (`data/model-outputs/<timestamp>-<slug>/`) and writes `results.md`, `results.html`, `responses.json`, `prompt.md`, and `individual/<model>.md` files.
+
+#### Step 4b: Synthesise in-session (subagent)
+
+Capture the output directory path from Step 4's stdout, then spawn a general-purpose subagent to produce the synthesis:
+
+```
+Agent tool with subagent_type: "general-purpose"
+description: "Synthesise multi-model responses"
+prompt: |
+  Read the following files and produce a synthesis of the model responses.
+
+  Prompt: <output-dir>/prompt.md
+  Individual model responses: <output-dir>/individual/*.md
+  (Skip any file whose content starts with "**Error:**" — that model failed.)
+
+  Produce an executive-depth synthesis with these sections, using British English
+  and sentence-case headings:
+
+  ## Overview
+  (1 short paragraph — the core question and the shape of the answer.)
+
+  ## Points of consensus
+  (Bullets — points where 2+ models agree, with [model] attribution tags.)
+
+  ## Points of disagreement
+  (Bullets — contradictions with a short pros/cons. Tag each view with [model].)
+
+  ## Unique insights
+  (Bullets — valuable points only one model raised. Tag with [model].)
+
+  ## Confidence level
+  (One paragraph — how much to trust this synthesis and why.)
+
+  Write the synthesis to /tmp/amm-synthesis-<slug>.md and return only the file path.
+  Do NOT edit results.md, results.html, or any file in the output directory —
+  the orchestrator will handle insertion.
+```
+
+Once the subagent returns the synthesis file path, run the insert helper:
+
+```bash
+cd /Users/ph/.claude/skills/ask-many-models && \
+  npx tsx scripts/resynthesise.ts "<output-dir>" --file "<synthesis-file>"
+```
+
+This inserts the synthesis at the top of `results.md` (after the `# Multi-Model Query` metadata, before the first model section) and regenerates `results.html`.
+
+**Fallback** — if for any reason you need API-based synthesis (running from Hermes/cron, or Claude's in-session context is wedged), omit `--file`:
+```bash
+npx tsx scripts/resynthesise.ts "<output-dir>"
+```
+This calls Claude Opus 4.7 via the Anthropic API and costs tokens.
 
 #### Step 5: Open results
 
@@ -226,6 +279,8 @@ This is useful for:
 5. Final synthesis incorporates deep research findings when complete
 
 ## Synthesis Approach
+
+Synthesis is produced by an in-session Opus subagent by default (see Step 4b above) so it rides Peter's Max quota. The older API-path synthesis (via `yarn query --synthesise` or `resynthesise.ts` without `--file`) still works and is kept as a fallback for Hermes/cron runs.
 
 The synthesis identifies:
 
