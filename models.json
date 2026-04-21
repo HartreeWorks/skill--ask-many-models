@@ -7,7 +7,7 @@
     },
     "comprehensive": {
       "description": "All default models plus GPT-5.4 Pro",
-      "models": ["gpt-5.4-thinking", "claude-4.6-opus-thinking", "gemini-3.1-pro", "grok-4.1", "gpt-5.4-pro"],
+      "models": ["gpt-5.4-thinking", "claude-4.7-opus-thinking", "gemini-3.1-pro", "grok-4.1", "gpt-5.4-pro"],
       "timeout_seconds": 600
     },
     "deep-research": {
@@ -17,7 +17,7 @@
     },
     "comprehensive-deep": {
       "description": "Quick models + deep research",
-      "models": ["gpt-5.4-thinking", "claude-4.6-opus-thinking", "gemini-3.1-pro", "grok-4.1", "openai-deep-research", "gemini-deep-research"],
+      "models": ["gpt-5.4-thinking", "claude-4.7-opus-thinking", "gemini-3.1-pro", "grok-4.1", "openai-deep-research", "gemini-deep-research"],
       "timeout_seconds": 3600
     }
   },
@@ -48,17 +48,17 @@
       "timeout_seconds": 3600,
       "poll_interval_ms": 10000
     },
-    "claude-4.6-opus": {
+    "claude-4.7-opus": {
       "provider": "anthropic",
-      "model_id": "claude-opus-4-6",
-      "display_name": "Claude 4.6 Opus",
+      "model_id": "claude-opus-4-7",
+      "display_name": "Claude 4.7 Opus",
       "type": "api",
       "max_tokens": 16000
     },
-    "claude-4.6-opus-thinking": {
+    "claude-4.7-opus-thinking": {
       "provider": "anthropic",
-      "model_id": "claude-opus-4-6",
-      "display_name": "Claude 4.6 Opus Thinking",
+      "model_id": "claude-opus-4-7",
+      "display_name": "Claude 4.7 Opus Thinking",
       "type": "api",
       "max_tokens": 32000,
       "reasoning": true

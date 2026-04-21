@@ -254,8 +254,8 @@ const VISION_MODELS = [
   'gpt-5.4-thinking',
   'gpt-5.4',
   'gpt-5.4-pro',
-  'claude-4.6-opus-thinking',
-  'claude-4.6-opus',
+  'claude-4.7-opus-thinking',
+  'claude-4.7-opus',
   'claude-4.5-sonnet',
   'gemini-3.1-pro',
   'gemini-3-flash',
@@ -353,8 +353,7 @@ async function queryModel(
         imageOptions.providerOptions = {
           anthropic: {
             thinking: {
-              type: 'enabled',
-              budgetTokens: 10000,
+              type: 'adaptive',
             },
           },
         };
@@ -388,8 +387,7 @@ async function queryModel(
         generateOptions.providerOptions = {
           anthropic: {
             thinking: {
-              type: 'enabled',
-              budgetTokens: 10000,
+              type: 'adaptive',
             },
           },
         };
@@ -440,7 +438,7 @@ function getHtmlPath(mdPath: string): string {
   return mdPath.replace(/\.md$/, '.html');
 }
 
-function generateHtmlFromMarkdown(mdContent: string, mdFilePath?: string): string {
+export function generateHtmlFromMarkdown(mdContent: string, mdFilePath?: string): string {
   const body = marked.parse(mdContent, { async: false }) as string;
   const mdLink = mdFilePath ? `<div class="source-link"><a href="file://${mdFilePath}">Open markdown source</a></div>` : '';
 
@@ -660,7 +658,7 @@ function generateHtmlFromMarkdown(mdContent: string, mdFilePath?: string): strin
 </html>`;
 }
 
-function syncHtmlFile(mdPath: string, outputFormat: OutputFormat): void {
+export function syncHtmlFile(mdPath: string, outputFormat: OutputFormat): void {
   if (outputFormat === 'markdown') return;
   try {
     const mdContent = readFileSync(mdPath, 'utf-8');
@@ -967,18 +965,17 @@ async function performSynthesis(
       throw error;
     }
   } else {
-    console.log('\n\x1b[35m✨ Running Synthesis with Claude Opus 4.5\x1b[0m\n');
+    console.log('\n\x1b[35m✨ Running Synthesis with Claude Opus 4.7\x1b[0m\n');
 
     try {
       const result = await generateText({
-        model: createAnthropic({ baseURL: 'https://api.anthropic.com/v1' })('claude-opus-4-6'),
+        model: createAnthropic({ baseURL: 'https://api.anthropic.com/v1' })('claude-opus-4-7'),
         prompt: synthesisPrompt,
         maxOutputTokens: 16000,
         providerOptions: {
           anthropic: {
             thinking: {
-              type: 'enabled',
-              budgetTokens: 10000,
+              type: 'adaptive',
             },
           },
         },
@@ -1045,7 +1042,7 @@ function updateLiveFileWithDeepResearch(filePath: string, modelName: string, res
 }
 
 // Update or insert synthesis in the live markdown file
-function updateSynthesisInLiveFile(filePath: string, synthesis: string, isPreliminary: boolean = false, customLabel?: string): void {
+export function updateSynthesisInLiveFile(filePath: string, synthesis: string, isPreliminary: boolean = false, customLabel?: string): void {
   let content = readFileSync(filePath, 'utf-8');
 
   const header = isPreliminary
@@ -1632,4 +1629,7 @@ program
     }
   });
 
-program.parse();
+// Only parse CLI args when run directly, not when imported as a module.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  program.parse();
+}
