@@ -439,7 +439,7 @@ function getHtmlPath(mdPath: string): string {
 }
 
 export function generateHtmlFromMarkdown(mdContent: string, mdFilePath?: string): string {
-  const body = marked.parse(mdContent, { async: false }) as string;
+  const body = marked.use({ tokenizer: { del: () => undefined } }).parse(mdContent, { async: false }) as string;
   const mdLink = mdFilePath ? `<div class="source-link"><a href="file://${mdFilePath}">Open markdown source</a></div>` : '';
 
   return `<!DOCTYPE html>
