@@ -2,26 +2,53 @@
   "presets": {
     "quick": {
       "description": "Fast responses from efficient models",
-      "models": ["gemini-3-flash", "grok-4.1-non-reasoning", "claude-4.5-sonnet"],
+      "models": ["gemini-3-flash", "grok-4.3-low", "claude-4.6-sonnet"],
       "timeout_seconds": 180
     },
     "comprehensive": {
-      "description": "All default models plus GPT-5.4 Pro",
-      "models": ["gpt-5.4-thinking", "claude-4.7-opus-thinking", "gemini-3.1-pro", "grok-4.1", "gpt-5.4-pro"],
+      "description": "All default models plus GPT-5.5 Pro",
+      "models": ["gpt-5.5-thinking", "claude-4.7-opus-thinking", "gemini-3.1-pro", "grok-4.3", "gpt-5.5-pro"],
       "timeout_seconds": 600
     },
     "deep-research": {
       "description": "Deep research (10-20 min per model)",
-      "models": ["openai-deep-research", "gemini-deep-research", "gpt-5.4-pro"],
+      "models": ["openai-deep-research", "gemini-deep-research", "gpt-5.5-pro"],
       "timeout_seconds": 3600
     },
     "comprehensive-deep": {
       "description": "Quick models + deep research",
-      "models": ["gpt-5.4-thinking", "claude-4.7-opus-thinking", "gemini-3.1-pro", "grok-4.1", "openai-deep-research", "gemini-deep-research"],
+      "models": ["gpt-5.5-thinking", "claude-4.7-opus-thinking", "gemini-3.1-pro", "grok-4.3", "openai-deep-research", "gemini-deep-research"],
       "timeout_seconds": 3600
     }
   },
   "models": {
+    "gpt-5.5": {
+      "provider": "openai",
+      "model_id": "gpt-5.5",
+      "display_name": "GPT-5.5",
+      "type": "api",
+      "max_tokens": 32000
+    },
+    "gpt-5.5-thinking": {
+      "provider": "openai",
+      "model_id": "gpt-5.5",
+      "display_name": "GPT-5.5 Thinking",
+      "type": "api",
+      "max_tokens": 64000,
+      "reasoning": true,
+      "reasoning_effort": "high"
+    },
+    "gpt-5.5-pro": {
+      "provider": "openai-deep",
+      "model_id": "gpt-5.5-pro",
+      "display_name": "GPT-5.5 Pro",
+      "type": "api",
+      "max_tokens": 64000,
+      "slow": true,
+      "deep_research": true,
+      "timeout_seconds": 3600,
+      "poll_interval_ms": 10000
+    },
     "gpt-5.4": {
       "provider": "openai",
       "model_id": "gpt-5.4",
@@ -35,7 +62,8 @@
       "display_name": "GPT-5.4 Thinking",
       "type": "api",
       "max_tokens": 32000,
-      "reasoning": true
+      "reasoning": true,
+      "reasoning_effort": "high"
     },
     "gpt-5.4-pro": {
       "provider": "openai-deep",
@@ -63,10 +91,10 @@
       "max_tokens": 32000,
       "reasoning": true
     },
-    "claude-4.5-sonnet": {
+    "claude-4.6-sonnet": {
       "provider": "anthropic",
-      "model_id": "claude-sonnet-4-5-20250929",
-      "display_name": "Claude 4.5 Sonnet",
+      "model_id": "claude-sonnet-4-6",
+      "display_name": "Claude 4.6 Sonnet",
       "type": "api",
       "max_tokens": 16000
     },
@@ -84,30 +112,41 @@
       "type": "api",
       "max_tokens": 16000
     },
-    "grok-4.1": {
-      "provider": "xai",
-      "model_id": "grok-4-1-fast-reasoning",
-      "display_name": "Grok 4.1 (Reasoning)",
+    "gemini-3.1-flash-lite": {
+      "provider": "google",
+      "model_id": "gemini-3.1-flash-lite",
+      "display_name": "Gemini 3.1 Flash-Lite",
       "type": "api",
       "max_tokens": 16000
     },
-    "grok-4.1-non-reasoning": {
+    "grok-4.3": {
       "provider": "xai",
-      "model_id": "grok-4-1-fast-non-reasoning",
-      "display_name": "Grok 4.1 (Fast)",
+      "model_id": "grok-4.3",
+      "display_name": "Grok 4.3",
       "type": "api",
-      "max_tokens": 16000
+      "max_tokens": 32000,
+      "reasoning": true,
+      "reasoning_effort": "high"
     },
-    "gpt-5.4-pro-browser": {
+    "grok-4.3-low": {
+      "provider": "xai",
+      "model_id": "grok-4.3",
+      "display_name": "Grok 4.3 Low Reasoning",
+      "type": "api",
+      "max_tokens": 16000,
+      "reasoning": true,
+      "reasoning_effort": "low"
+    },
+    "gpt-5.5-pro-browser": {
       "provider": "openai",
-      "display_name": "GPT-5.4 Pro (Browser)",
+      "display_name": "GPT-5.5 Pro (Browser)",
       "type": "browser",
-      "url": "https://chatgpt.com/?model=gpt-5.4-pro",
+      "url": "https://chatgpt.com/?model=gpt-5.5-pro",
       "requires_browser": true
     },
     "openai-deep-research": {
       "provider": "openai-deep",
-      "model_id": "o3-deep-research-2025-06-26",
+      "model_id": "o3-deep-research",
       "display_name": "OpenAI Deep Research",
       "type": "api",
       "deep_research": true,

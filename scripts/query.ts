@@ -5,7 +5,7 @@
  * Usage:
  *   yarn query "What are the pros and cons of Rust vs Go?"
  *   yarn query --preset quick "Explain quantum computing"
- *   yarn query --models gpt-5.4,gemini-3-flash "Your question"
+ *   yarn query --models gpt-5.5,gemini-3-flash "Your question"
  */
 
 import { config as dotenvConfig } from 'dotenv';
@@ -251,15 +251,53 @@ class ProgressTracker extends EventEmitter {
 // Models known to support vision
 // NOTE: Update this list when changing model IDs in models.json
 const VISION_MODELS = [
+  'gpt-5.5-thinking',
+  'gpt-5.5',
+  'gpt-5.5-pro',
   'gpt-5.4-thinking',
   'gpt-5.4',
   'gpt-5.4-pro',
   'claude-4.7-opus-thinking',
   'claude-4.7-opus',
-  'claude-4.5-sonnet',
+  'claude-4.6-sonnet',
   'gemini-3.1-pro',
   'gemini-3-flash',
+  'gemini-3.1-flash-lite',
 ];
+
+function getReasoningProviderOptions(
+  modelConfig: import('./models.js').ModelConfig
+): Parameters<typeof generateText>[0]['providerOptions'] | undefined {
+  if (!modelConfig.reasoning) return undefined;
+
+  if (modelConfig.provider === 'openai') {
+    return {
+      openai: {
+        reasoningEffort: modelConfig.reasoning_effort || 'high',
+      },
+    };
+  }
+
+  if (modelConfig.provider === 'xai') {
+    return {
+      xai: {
+        reasoningEffort: modelConfig.reasoning_effort || 'high',
+      },
+    };
+  }
+
+  if (modelConfig.provider === 'anthropic') {
+    return {
+      anthropic: {
+        thinking: {
+          type: 'adaptive',
+        },
+      },
+    };
+  }
+
+  return undefined;
+}
 
 // Get web search tools for a provider (returns undefined if not supported or disabled)
 function getWebSearchTools(
@@ -348,15 +386,8 @@ async function queryModel(
         abortSignal: controller.signal,
       };
 
-      // Enable extended thinking for Anthropic reasoning models
-      if (modelConfig?.provider === 'anthropic' && modelConfig?.reasoning) {
-        imageOptions.providerOptions = {
-          anthropic: {
-            thinking: {
-              type: 'adaptive',
-            },
-          },
-        };
+      if (modelConfig) {
+        imageOptions.providerOptions = getReasoningProviderOptions(modelConfig);
       }
 
       result = await generateText(imageOptions);
@@ -382,15 +413,8 @@ async function queryModel(
         abortSignal: controller.signal,
       };
 
-      // Enable extended thinking for Anthropic reasoning models
-      if (modelConfig?.provider === 'anthropic' && modelConfig?.reasoning) {
-        generateOptions.providerOptions = {
-          anthropic: {
-            thinking: {
-              type: 'adaptive',
-            },
-          },
-        };
+      if (modelConfig) {
+        generateOptions.providerOptions = getReasoningProviderOptions(modelConfig);
       }
 
       result = await generateText(generateOptions);
@@ -448,37 +472,48 @@ export function generateHtmlFromMarkdown(mdContent: string, mdFilePath?: string)
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Multi-Model Query</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --serif: 'Palatino Linotype', Palatino, 'Book Antiqua', 'Georgia', serif;
+    --display: 'Fraunces', Georgia, 'Times New Roman', serif;
+    --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
     --mono: 'SF Mono', 'Fira Code', 'Fira Mono', Menlo, Consolas, monospace;
-    --bg: #fcfbf9;
-    --bg-sidebar: #f5f3ef;
-    --text: #2a2520;
-    --text-muted: #6b6560;
-    --border: #ddd8d0;
-    --accent: #8b4513;
-    --link: #6b3a1f;
-    --sidebar-w: 220px;
-    --content-max: 700px;
+    --bg: oklch(0.99 0.004 250);
+    --bg-sidebar: oklch(0.975 0.006 250);
+    --panel: oklch(0.965 0.008 250);
+    --text: oklch(0.24 0.015 250);
+    --text-muted: oklch(0.5 0.018 250);
+    --border: oklch(0.9 0.01 250);
+    --accent: oklch(0.46 0.072 215);
+    --link: oklch(0.46 0.072 215);
+    --sidebar-w: 240px;
+    --content-max: 66ch;
   }
+
+  html { font-size: 17px; }
 
   body {
     font-family: var(--serif);
-    font-size: 17px;
-    line-height: 1.75;
+    font-size: 1rem;
+    line-height: 1.7;
     color: var(--text);
     background: var(--bg);
+    font-feature-settings: "kern" 1;
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
   .layout {
     display: flex;
-    max-width: calc(var(--sidebar-w) + var(--content-max) + 5rem);
+    gap: 3.5rem;
+    max-width: calc(var(--sidebar-w) + 740px);
     margin: 0 auto;
     min-height: 100vh;
+    padding-right: 2rem;
   }
 
   nav.toc {
@@ -489,122 +524,137 @@ export function generateHtmlFromMarkdown(mdContent: string, mdFilePath?: string)
     flex-shrink: 0;
     height: 100vh;
     overflow-y: auto;
-    padding: 2.5rem 1.25rem 2rem 0;
+    padding: 4rem 0 2rem 1.75rem;
   }
 
   nav.toc .toc-title {
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
+    font-family: var(--serif);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--text-muted);
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.2rem;
   }
 
   nav.toc ul { list-style: none; padding: 0; margin: 0; }
-  nav.toc li { margin-bottom: 0.15rem; }
+  nav.toc li { margin-bottom: 0.05rem; }
 
   nav.toc a {
     display: block;
-    padding: 0.3rem 0.6rem;
-    font-size: 0.8rem;
-    line-height: 1.4;
+    padding: 0.3rem 0;
+    font-size: 0.84rem;
+    line-height: 1.45;
     color: var(--text-muted);
     text-decoration: none;
-    border-radius: 4px;
-    transition: color 0.15s, background 0.15s;
+    transition: color 0.15s;
   }
 
-  nav.toc a:hover { color: var(--text); background: rgba(0,0,0,0.04); }
-  nav.toc a.active { color: var(--accent); background: rgba(139,69,19,0.06); font-weight: 600; }
+  nav.toc a:hover { color: var(--text); }
+  nav.toc a.active { color: var(--accent); font-weight: 600; }
 
   .content {
     flex: 1;
     max-width: var(--content-max);
-    padding: 2.5rem 0 4rem 2.5rem;
-    border-left: 1px solid var(--border);
+    padding: 4rem 0 7rem;
+  }
+
+  .content > h1:first-of-type {
+    font-family: var(--display);
+    font-size: clamp(2.6rem, 5vw, 3.4rem);
+    font-weight: 500;
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+    line-height: 1.02;
+    color: var(--text);
+    margin: 0 0 1.5rem;
+    padding-top: 0;
+    border-top: none;
   }
 
   h1 {
-    font-family: var(--serif);
-    font-size: 1.1rem;
-    font-weight: 700;
-    font-variant: small-caps;
-    letter-spacing: 0.08em;
-    text-transform: lowercase;
-    margin: 3.5rem 0 0.5rem;
-    padding-bottom: 0;
-    border-bottom: none;
-    color: var(--accent);
+    font-family: var(--display);
+    font-size: 1.9rem;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.1;
+    color: var(--text);
+    margin: 4rem 0 0.5rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--border);
   }
 
-  h1:first-child { margin-top: 0; }
-
   h1 + hr { display: none; }
+  hr:has(+ h1) { display: none; }
 
   h2 {
     font-family: var(--serif);
-    font-size: 1.15rem;
-    font-weight: 400;
-    font-style: italic;
-    margin: 1.75rem 0 0.5rem;
-    color: var(--text);
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 2.5rem 0 0.75rem;
   }
 
   h3 {
-    font-family: var(--serif);
-    font-size: 1rem;
-    font-weight: 700;
-    margin: 1.5rem 0 0.4rem;
+    font-family: var(--display);
+    font-size: 1.3rem;
+    font-weight: 500;
+    font-style: italic;
+    margin: 2rem 0 0.45rem;
     color: var(--text);
   }
 
   h4 {
     font-family: var(--serif);
     font-size: 0.95rem;
-    font-weight: 700;
-    margin: 1.25rem 0 0.35rem;
+    font-weight: 600;
+    margin: 1.5rem 0 0.35rem;
     color: var(--text-muted);
   }
 
-  p { margin: 0 0 1rem; }
-  strong { font-weight: 700; }
-  em { color: var(--text-muted); }
+  p { margin: 0 0 1.2rem; }
+  strong { font-weight: 600; }
+  em { font-style: italic; }
 
-  a { color: var(--link); text-decoration: underline; text-decoration-color: rgba(107,58,31,0.3); text-underline-offset: 2px; }
+  a { color: var(--link); text-decoration: underline; text-decoration-color: oklch(0.46 0.072 215 / 0.4); text-underline-offset: 2px; }
   a:hover { text-decoration-color: var(--link); }
 
-  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2.5rem 0; }
 
-  ul, ol { margin: 0 0 1rem; padding-left: 1.4rem; }
-  li { margin-bottom: 0.3rem; }
-  li > ul, li > ol { margin-top: 0.3rem; margin-bottom: 0; }
+  ul, ol { margin: 0 0 1.2rem; padding-left: 1.3rem; }
+  li { margin-bottom: 0.45rem; }
+  li::marker { color: var(--accent); }
+  li > ul, li > ol { margin-top: 0.45rem; margin-bottom: 0; }
 
-  blockquote { border-left: 2px solid var(--accent); padding: 0.4rem 0 0.4rem 1.25rem; margin: 0 0 1rem; color: var(--text-muted); font-style: italic; }
+  blockquote { margin: 1.5rem 0; padding: 0 0 0 1.75rem; border-left: 2px solid var(--accent); font-family: var(--display); font-style: italic; font-size: 1.15rem; line-height: 1.5; color: var(--text); }
+  blockquote p { margin: 0; }
 
-  pre { background: #f0ede8; border: 1px solid var(--border); border-radius: 4px; padding: 1rem 1.25rem; overflow-x: auto; margin: 0 0 1rem; font-size: 0.82rem; line-height: 1.55; }
+  pre { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; overflow-x: auto; margin: 0 0 1.2rem; font-size: 0.82rem; line-height: 1.6; }
   code { font-family: var(--mono); font-size: 0.85em; }
-  :not(pre) > code { background: #eeebe5; padding: 0.12em 0.35em; border-radius: 3px; }
+  :not(pre) > code { background: var(--panel); padding: 0.12em 0.38em; border-radius: 4px; }
 
-  table { width: 100%; border-collapse: collapse; margin: 0 0 1rem; font-size: 0.92rem; }
-  th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
-  th { font-weight: 700; font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  table { width: 100%; border-collapse: collapse; margin: 0.5rem 0 1.4rem; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+  th, td { padding: 0.6rem 0.85rem; text-align: left; border-bottom: 1px solid var(--border); }
+  thead th { font-weight: 600; font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1.5px solid var(--text); }
+  tbody tr:last-child td { border-bottom: none; }
 
-  @media (max-width: 860px) {
+  .toc-toggle { display: none; }
+
+  @media (max-width: 880px) {
     nav.toc { display: none; }
-    .toc-toggle { display: block; position: fixed; top: 0.6rem; right: 0.75rem; z-index: 20; background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 4px; padding: 0.3rem 0.6rem; font-family: var(--serif); font-size: 0.75rem; color: var(--text-muted); cursor: pointer; }
-    .content { padding: 2rem 1.25rem 3rem; border-left: none; }
+    .layout { padding: 0 1.25rem; gap: 0; }
+    .content { padding: 2rem 0 3rem; }
+    .toc-toggle { display: block; position: fixed; top: 0.6rem; right: 0.75rem; z-index: 20; background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.7rem; font-family: var(--serif); font-size: 0.78rem; color: var(--text-muted); cursor: pointer; }
   }
-  @media (min-width: 861px) { .toc-toggle { display: none; } }
 
   .source-link { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.5rem; }
   .source-link a { color: var(--text-muted); text-decoration: none; border-bottom: 1px solid var(--border); }
   .source-link a:hover { color: var(--accent); border-color: var(--accent); }
 
   h1[id] { scroll-margin-top: 1rem; }
-  @media (max-width: 860px) { h1[id] { scroll-margin-top: 3.5rem; } }
+  @media (max-width: 880px) { h1[id] { scroll-margin-top: 3.5rem; } }
 </style>
 </head>
 <body>

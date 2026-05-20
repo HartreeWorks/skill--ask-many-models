@@ -12,6 +12,7 @@ export interface ModelConfig {
   provider: 'openai' | 'google' | 'xai' | 'anthropic' | 'openai-deep' | 'gemini-deep';
   display_name?: string;
   reasoning?: boolean;
+  reasoning_effort?: 'low' | 'medium' | 'high';
   model_id: string;
   type: 'api' | 'browser';
   max_tokens?: number;

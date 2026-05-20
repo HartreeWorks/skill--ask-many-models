@@ -1,6 +1,6 @@
 ---
 name: ask-many-models
-description: This skill should be used when the user asks to "ask many models", "query multiple AI models", "get opinions from different AIs", "compare AI responses", "ask GPT and Gemini", "ask several models", or mentions wanting to send the same prompt to multiple AI models and synthesise the results.
+description: For querying multiple AI models and synthesising results, including "ask many models", "query multiple AI models", "compare AI responses", "ask GPT and Gemini", and similar requests.
 ---
 
 # Ask Many Models
@@ -51,10 +51,10 @@ Ask: "I've drafted a prompt capturing our discussion. Please review and let me k
 ```
 Which models should I query?
 
-1. ⚡ Defaults - GPT-5.4 Thinking, Claude 4.7 Opus Thinking, Gemini 3.1 Pro, Grok 4.1 (Recommended)
-2. 🚀 Quick - Gemini 3 Flash, Grok 4.1 Fast, Claude 4.5 Sonnet (~10s)
-3. 📊 Comprehensive - Defaults + GPT-5.4 Pro (slow, extra compute)
-4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.4 Pro (10-20 min)
+1. ⚡ Defaults - GPT-5.5 Thinking, Claude 4.7 Opus Thinking, Gemini 3.1 Pro, Grok 4.3 (Recommended)
+2. 🚀 Quick - Gemini 3 Flash, Grok 4.3 Low Reasoning, Claude 4.6 Sonnet (~10s)
+3. 📊 Comprehensive - Defaults + GPT-5.5 Pro (slow, extra compute)
+4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.5 Pro (10-20 min)
 5. 🔧 Pick models - Choose individual models
 
 _(To use a custom system prompt, type SYS after the number, e.g. "1 SYS")_
@@ -68,18 +68,22 @@ If user selects **5 (Pick models)**, print this list and ask for comma-separated
 
 ```
 Available models:
-1. gpt-5.4-thinking (default)
+1. gpt-5.5-thinking (default)
 2. claude-4.7-opus-thinking (default)
 3. gemini-3.1-pro (default)
-4. grok-4.1 (default)
+4. grok-4.3 (default)
 5. gemini-3-flash
-6. grok-4.1-non-reasoning
-7. claude-4.5-sonnet
-8. gpt-5.4
-9. gpt-5.4-pro (slow, extra compute)
+6. grok-4.3-low
+7. claude-4.6-sonnet
+8. gpt-5.5
+9. gpt-5.5-pro (slow, extra compute)
 10. claude-4.7-opus
 11. openai-deep-research (10-20 min)
 12. gemini-deep-research (10-20 min)
+13. gpt-5.4-thinking
+14. gpt-5.4
+15. gpt-5.4-pro (slow, extra compute)
+16. gemini-3.1-flash-lite
 
 Enter numbers (e.g. 1,2,5). Add SYS for a custom system prompt (e.g. "1,3 SYS"):
 ```
@@ -122,10 +126,10 @@ If an image is in the conversation, save it to:
 #### Step 4: Run the query
 
 Map selection to model IDs:
-- **Defaults**: `gpt-5.4-thinking,claude-4.7-opus-thinking,gemini-3.1-pro,grok-4.1`
-- **Quick**: `gemini-3-flash,grok-4.1-non-reasoning,claude-4.5-sonnet`
-- **Comprehensive**: `gpt-5.4-thinking,claude-4.7-opus-thinking,gemini-3.1-pro,grok-4.1,gpt-5.4-pro`
-- **Deep Research**: `openai-deep-research,gemini-deep-research,gpt-5.4-pro`
+- **Defaults**: `gpt-5.5-thinking,claude-4.7-opus-thinking,gemini-3.1-pro,grok-4.3`
+- **Quick**: `gemini-3-flash,grok-4.3-low,claude-4.6-sonnet`
+- **Comprehensive**: `gpt-5.5-thinking,claude-4.7-opus-thinking,gemini-3.1-pro,grok-4.3,gpt-5.5-pro`
+- **Deep Research**: `openai-deep-research,gemini-deep-research,gpt-5.5-pro`
 
 Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars).
 
@@ -224,7 +228,7 @@ Paste an image into your message along with your question to have vision-capable
 /amm "What's in this image?" [paste image]
 ```
 
-Vision-capable models: GPT-5.4 Thinking, Claude 4.7 Opus Thinking, Claude 4.5 Sonnet, Gemini 3.1 Pro, Gemini 3 Flash
+Vision-capable models: GPT-5.5 Thinking, GPT-5.5, GPT-5.5 Pro, GPT-5.4 Thinking, Claude 4.7 Opus Thinking, Claude 4.6 Sonnet, Gemini 3.1 Pro, Gemini 3 Flash, Gemini 3.1 Flash-Lite
 
 Models without vision support will receive just the text prompt with a note that an image was provided.
 
@@ -236,9 +240,9 @@ The skill currently runs through the local `yarn query` tooling in this director
 
 | Preset | Models | Use Case |
 |--------|--------|----------|
-| `quick` | Gemini 3 Flash, Grok 4.1 (Fast), Claude 4.5 Sonnet | Fast responses (~10s) |
-| `comprehensive` | Defaults + GPT-5.4 Pro | Thorough coverage (~60s) |
-| `deep-research` | OpenAI Deep Research, Gemini Deep Research | In-depth research (API, 10-20 min) |
+| `quick` | Gemini 3 Flash, Grok 4.3 Low Reasoning, Claude 4.6 Sonnet | Fast responses (~10s) |
+| `comprehensive` | Defaults + GPT-5.5 Pro | Thorough coverage (~60s) |
+| `deep-research` | OpenAI Deep Research, Gemini Deep Research, GPT-5.5 Pro | In-depth research (API, 10-20 min) |
 | `comprehensive-deep` | Quick models + deep research | Best of both worlds |
 
 ## Deep Research Mode
@@ -328,9 +332,10 @@ data/model-outputs/
     ├── responses.json      # Raw API responses
     └── individual/
         ├── gpt-5.4-thinking.md
+        ├── gpt-5.5-thinking.md
         ├── claude-4.7-opus-thinking.md
         ├── gemini-3.1-pro.md
-        └── grok-4.md
+        └── grok-4.3.md
 ```
 
 ## Available Models
@@ -339,16 +344,20 @@ data/model-outputs/
 
 | Model ID | Display Name | Provider | Vision |
 |----------|--------------|----------|--------|
+| gpt-5.5-thinking | GPT-5.5 Thinking | OpenAI | ✓ |
+| gpt-5.5 | GPT-5.5 | OpenAI | ✓ |
+| gpt-5.5-pro | GPT-5.5 Pro | OpenAI | ✓ |
 | gpt-5.4-thinking | GPT-5.4 Thinking | OpenAI | ✓ |
 | claude-4.7-opus-thinking | Claude 4.7 Opus Thinking | Anthropic | ✓ |
-| grok-4.1 | Grok 4.1 (Reasoning) | xAI | |
+| grok-4.3 | Grok 4.3 | xAI | |
 | gemini-3.1-pro | Gemini 3.1 Pro | Google | ✓ |
 | gemini-3-flash | Gemini 3 Flash | Google | ✓ |
+| gemini-3.1-flash-lite | Gemini 3.1 Flash-Lite | Google | ✓ |
 | gpt-5.4 | GPT-5.4 | OpenAI | ✓ |
 | gpt-5.4-pro | GPT-5.4 Pro | OpenAI | ✓ |
 | claude-4.7-opus | Claude 4.7 Opus | Anthropic | ✓ |
-| claude-4.5-sonnet | Claude 4.5 Sonnet | Anthropic | ✓ |
-| grok-4.1-non-reasoning | Grok 4.1 (Fast) | xAI | |
+| claude-4.6-sonnet | Claude 4.6 Sonnet | Anthropic | ✓ |
+| grok-4.3-low | Grok 4.3 Low Reasoning | xAI | |
 
 ### Deep Research Models
 
@@ -368,7 +377,7 @@ Desktop notifications via terminal-notifier:
 
 ## Slow Models & Progressive Synthesis
 
-Some models (like GPT-5.4 Pro) use extra compute and can take 10-60 minutes for complex queries. These are marked as "slow" in the config.
+Some models (like GPT-5.5 Pro) use extra compute and can take 10-60 minutes for complex queries. These are marked as "slow" in the config.
 
 When slow models are included:
 1. **Progress display** shows real-time status of all models with ✓/✗/◐ icons
