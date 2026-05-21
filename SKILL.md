@@ -75,15 +75,12 @@ Available models:
 5. gemini-3-flash
 6. grok-4.3-low
 7. claude-4.6-sonnet
-8. gpt-5.5
-9. gpt-5.5-pro (slow, extra compute)
-10. claude-4.7-opus
-11. openai-deep-research (10-20 min)
-12. gemini-deep-research (10-20 min)
-13. gpt-5.4-thinking
-14. gpt-5.4
-15. gpt-5.4-pro (slow, extra compute)
-16. gemini-3.1-flash-lite
+8. gpt-5.5-pro (slow, extra compute)
+9. openai-deep-research (10-20 min)
+10. gemini-deep-research (10-20 min)
+11. gpt-5.4-thinking
+12. gpt-5.4-pro (slow, extra compute)
+13. gemini-3.1-flash-lite
 
 Enter numbers (e.g. 1,2,5). Add SYS for a custom system prompt (e.g. "1,3 SYS"):
 ```
@@ -344,18 +341,15 @@ data/model-outputs/
 
 | Model ID | Display Name | Provider | Vision |
 |----------|--------------|----------|--------|
-| gpt-5.5-thinking | GPT-5.5 Thinking | OpenAI | ✓ |
-| gpt-5.5 | GPT-5.5 | OpenAI | ✓ |
+| gpt-5.5-thinking | GPT-5.5 | OpenAI | ✓ |
 | gpt-5.5-pro | GPT-5.5 Pro | OpenAI | ✓ |
-| gpt-5.4-thinking | GPT-5.4 Thinking | OpenAI | ✓ |
-| claude-4.7-opus-thinking | Claude 4.7 Opus Thinking | Anthropic | ✓ |
+| gpt-5.4-thinking | GPT-5.4 | OpenAI | ✓ |
+| claude-4.7-opus-thinking | Claude 4.7 Opus | Anthropic | ✓ |
 | grok-4.3 | Grok 4.3 | xAI | |
 | gemini-3.1-pro | Gemini 3.1 Pro | Google | ✓ |
 | gemini-3-flash | Gemini 3 Flash | Google | ✓ |
 | gemini-3.1-flash-lite | Gemini 3.1 Flash-Lite | Google | ✓ |
-| gpt-5.4 | GPT-5.4 | OpenAI | ✓ |
 | gpt-5.4-pro | GPT-5.4 Pro | OpenAI | ✓ |
-| claude-4.7-opus | Claude 4.7 Opus | Anthropic | ✓ |
 | claude-4.6-sonnet | Claude 4.6 Sonnet | Anthropic | ✓ |
 | grok-4.3-low | Grok 4.3 Low Reasoning | xAI | |
 

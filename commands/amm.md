@@ -50,15 +50,12 @@ Available models:
 5. gemini-3-flash
 6. grok-4.3-low
 7. claude-4.6-sonnet
-8. gpt-5.5
-9. gpt-5.5-pro (slow)
-10. claude-4.7-opus
-11. openai-deep-research (10-20 min)
-12. gemini-deep-research (10-20 min)
-13. gpt-5.4-thinking
-14. gpt-5.4
-15. gpt-5.4-pro (slow)
-16. gemini-3.1-flash-lite
+8. gpt-5.5-pro (slow)
+9. openai-deep-research (10-20 min)
+10. gemini-deep-research (10-20 min)
+11. gpt-5.4-thinking
+12. gpt-5.4-pro (slow)
+13. gemini-3.1-flash-lite
 
 _(To use a custom system prompt, type SYS after the number, e.g. "1 SYS")_
 
@@ -125,16 +122,14 @@ The `--synthesise` flag runs Claude Opus 4.7 with extended thinking to synthesis
 
 | Model ID | Display Name | Vision | Notes |
 |----------|--------------|--------|-------|
-| gpt-5.5-thinking | GPT-5.5 Thinking | ✓ | |
-| claude-4.7-opus-thinking | Claude 4.7 Opus Thinking | ✓ | |
+| gpt-5.5-thinking | GPT-5.5 | ✓ | |
+| claude-4.7-opus-thinking | Claude 4.7 Opus | ✓ | |
 | grok-4.3 | Grok 4.3 | | |
 | gemini-3.1-pro | Gemini 3.1 Pro | ✓ | |
 | gemini-3-flash | Gemini 3 Flash | ✓ | |
-| gpt-5.5 | GPT-5.5 | ✓ | |
 | gpt-5.5-pro | GPT-5.5 Pro | ✓ | Slow |
-| gpt-5.4 | GPT-5.4 | ✓ | |
+| gpt-5.4-thinking | GPT-5.4 | ✓ | |
 | gpt-5.4-pro | GPT-5.4 Pro | ✓ | Slow |
-| claude-4.7-opus | Claude 4.7 Opus | ✓ | |
 | claude-4.6-sonnet | Claude 4.6 Sonnet | ✓ | |
 | grok-4.3-low | Grok 4.3 Low Reasoning | | |
 | gemini-3.1-flash-lite | Gemini 3.1 Flash-Lite | ✓ | |

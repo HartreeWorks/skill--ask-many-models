@@ -22,17 +22,10 @@
     }
   },
   "models": {
-    "gpt-5.5": {
-      "provider": "openai",
-      "model_id": "gpt-5.5",
-      "display_name": "GPT-5.5",
-      "type": "api",
-      "max_tokens": 32000
-    },
     "gpt-5.5-thinking": {
       "provider": "openai",
       "model_id": "gpt-5.5",
-      "display_name": "GPT-5.5 Thinking",
+      "display_name": "GPT-5.5",
       "type": "api",
       "max_tokens": 64000,
       "reasoning": true,
@@ -49,17 +42,10 @@
       "timeout_seconds": 3600,
       "poll_interval_ms": 10000
     },
-    "gpt-5.4": {
-      "provider": "openai",
-      "model_id": "gpt-5.4",
-      "display_name": "GPT-5.4",
-      "type": "api",
-      "max_tokens": 16000
-    },
     "gpt-5.4-thinking": {
       "provider": "openai",
       "model_id": "gpt-5.4",
-      "display_name": "GPT-5.4 Thinking",
+      "display_name": "GPT-5.4",
       "type": "api",
       "max_tokens": 32000,
       "reasoning": true,
@@ -76,17 +62,10 @@
       "timeout_seconds": 3600,
       "poll_interval_ms": 10000
     },
-    "claude-4.7-opus": {
-      "provider": "anthropic",
-      "model_id": "claude-opus-4-7",
-      "display_name": "Claude 4.7 Opus",
-      "type": "api",
-      "max_tokens": 16000
-    },
     "claude-4.7-opus-thinking": {
       "provider": "anthropic",
       "model_id": "claude-opus-4-7",
-      "display_name": "Claude 4.7 Opus Thinking",
+      "display_name": "Claude 4.7 Opus",
       "type": "api",
       "max_tokens": 32000,
       "reasoning": true

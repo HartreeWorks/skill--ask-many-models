@@ -5,7 +5,7 @@
  * Usage:
  *   yarn query "What are the pros and cons of Rust vs Go?"
  *   yarn query --preset quick "Explain quantum computing"
- *   yarn query --models gpt-5.5,gemini-3-flash "Your question"
+ *   yarn query --models gpt-5.5-thinking,gemini-3-flash "Your question"
  */
 
 import { config as dotenvConfig } from 'dotenv';
@@ -252,13 +252,10 @@ class ProgressTracker extends EventEmitter {
 // NOTE: Update this list when changing model IDs in models.json
 const VISION_MODELS = [
   'gpt-5.5-thinking',
-  'gpt-5.5',
   'gpt-5.5-pro',
   'gpt-5.4-thinking',
-  'gpt-5.4',
   'gpt-5.4-pro',
   'claude-4.7-opus-thinking',
-  'claude-4.7-opus',
   'claude-4.6-sonnet',
   'gemini-3.1-pro',
   'gemini-3-flash',
@@ -462,8 +459,61 @@ function getHtmlPath(mdPath: string): string {
   return mdPath.replace(/\.md$/, '.html');
 }
 
+// Decorate inline [Model name] citation tags so they read as quiet metadata
+// rather than body text: each becomes a small superscript, and a run that
+// cites every model that participated in this report collapses to "[All models]".
+function decorateModelCitations(html: string): string {
+  let displayNames: string[];
+  try {
+    const cfg = loadConfig();
+    displayNames = Object.values(cfg.models)
+      .map((m) => m.display_name)
+      .filter((n): n is string => typeof n === 'string' && n.length > 0);
+  } catch {
+    return html;
+  }
+  if (displayNames.length === 0) return html;
+
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Longest names first so the alternation prefers the most specific match.
+  const alt = [...new Set(displayNames)].sort((a, b) => b.length - a.length).map(esc).join('|');
+  const tokenSrc = `\\[(?:${alt})\\]`;
+  const tokenRe = new RegExp(tokenSrc, 'g');
+  const runRe = new RegExp(`${tokenSrc}(?:\\s*${tokenSrc})*`, 'g');
+
+  // Leave <pre> blocks untouched (code samples may contain brackets).
+  const segments = html.split(/(<pre[\s\S]*?<\/pre>)/g);
+
+  // First pass: which configured models actually appear as citations here?
+  const participating = new Set<string>();
+  for (const seg of segments) {
+    if (seg.startsWith('<pre')) continue;
+    const matches = seg.match(tokenRe);
+    if (matches) for (const tok of matches) participating.add(tok.slice(1, -1));
+  }
+  if (participating.size === 0) return html;
+
+  // Second pass: rewrite each run of citation tags.
+  for (let i = 0; i < segments.length; i++) {
+    if (segments[i].startsWith('<pre')) continue;
+    segments[i] = segments[i].replace(runRe, (run) => {
+      const tokens = run.match(tokenRe) || [];
+      const uniq = [...new Set(tokens.map((t) => t.slice(1, -1)))];
+      const unanimous =
+        participating.size >= 2 &&
+        uniq.length === participating.size &&
+        uniq.every((n) => participating.has(n));
+      const cite = (label: string) => `<span class="amm-cite">[${label}]</span>`;
+      const inner = unanimous ? cite('All models') : uniq.map(cite).join('');
+      return `<span class="amm-cites">${inner}</span>`;
+    });
+  }
+  return segments.join('');
+}
+
 export function generateHtmlFromMarkdown(mdContent: string, mdFilePath?: string): string {
-  const body = marked.use({ tokenizer: { del: () => undefined } }).parse(mdContent, { async: false }) as string;
+  const parsed = marked.use({ tokenizer: { del: () => undefined } }).parse(mdContent, { async: false }) as string;
+  const body = decorateModelCitations(parsed);
   const mdLink = mdFilePath ? `<div class="source-link"><a href="file://${mdFilePath}">Open markdown source</a></div>` : '';
 
   return `<!DOCTYPE html>
@@ -487,6 +537,7 @@ export function generateHtmlFromMarkdown(mdContent: string, mdFilePath?: string)
     --panel: oklch(0.965 0.008 250);
     --text: oklch(0.24 0.015 250);
     --text-muted: oklch(0.5 0.018 250);
+    --text-faint: oklch(0.64 0.014 250);
     --border: oklch(0.9 0.01 250);
     --accent: oklch(0.46 0.072 215);
     --link: oklch(0.46 0.072 215);
@@ -648,6 +699,10 @@ export function generateHtmlFromMarkdown(mdContent: string, mdFilePath?: string)
     .content { padding: 2rem 0 3rem; }
     .toc-toggle { display: block; position: fixed; top: 0.6rem; right: 0.75rem; z-index: 20; background: var(--bg-sidebar); border: 1px solid var(--border); border-radius: 6px; padding: 0.35rem 0.7rem; font-family: var(--serif); font-size: 0.78rem; color: var(--text-muted); cursor: pointer; }
   }
+
+  .amm-cites { margin-left: 0.1em; }
+  .amm-cite { font-size: 0.7em; vertical-align: 0.4em; color: var(--text-faint); white-space: nowrap; }
+  .amm-cite + .amm-cite { margin-left: 0.35em; }
 
   .source-link { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.5rem; }
   .source-link a { color: var(--text-muted); text-decoration: none; border-bottom: 1px solid var(--border); }
