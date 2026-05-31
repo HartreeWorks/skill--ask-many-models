@@ -28,7 +28,7 @@ Print this menu and wait for user input:
 ```
 Which models should I query?
 
-1. Defaults - GPT-5.5 Thinking, Claude 4.7 Opus Thinking, Gemini 3.1 Pro, Grok 4.3 (Recommended)
+1. Defaults - GPT-5.5 Thinking, Claude 4.8 Opus Thinking, Gemini 3.1 Pro, Grok 4.3 (Recommended)
 2. Quick - Gemini 3 Flash, Grok 4.3 Low Reasoning, Claude 4.6 Sonnet (~10s)
 3. Comprehensive - Defaults + GPT-5.5 Pro (slow, extra compute)
 4. Deep Research - OpenAI/Gemini deep research + GPT-5.5 Pro (10-20 min)
@@ -44,7 +44,7 @@ If user selects "Pick models", print this numbered list and ask them to type the
 ```
 Available models:
 1. gpt-5.5-thinking (default)
-2. claude-4.7-opus-thinking (default)
+2. claude-4.8-opus-thinking (default)
 3. gemini-3.1-pro (default)
 4. grok-4.3 (default)
 5. gemini-3-flash
@@ -70,14 +70,14 @@ If an image is present in the conversation:
 1. Save it to `/Users/ph/.claude/skills/ask-many-models/data/model-outputs/image-TIMESTAMP.png`
 2. Note the path for the `--image` flag
 
-Vision-capable models: gpt-5.5-thinking, gpt-5.5, gpt-5.5-pro, gpt-5.4-thinking, claude-4.7-opus-thinking, claude-4.6-sonnet, gemini-3.1-pro, gemini-3-flash, gemini-3.1-flash-lite
+Vision-capable models: gpt-5.5-thinking, gpt-5.5, gpt-5.5-pro, gpt-5.4-thinking, claude-4.8-opus-thinking, claude-4.6-sonnet, gemini-3.1-pro, gemini-3-flash, gemini-3.1-flash-lite
 
 ### Step 4: Run the query
 
 Map the selection to models:
-- **Defaults**: `gpt-5.5-thinking,claude-4.7-opus-thinking,gemini-3.1-pro,grok-4.3`
+- **Defaults**: `gpt-5.5-thinking,claude-4.8-opus-thinking,gemini-3.1-pro,grok-4.3`
 - **Quick**: `gemini-3-flash,grok-4.3-low,claude-4.6-sonnet`
-- **Comprehensive**: `gpt-5.5-thinking,claude-4.7-opus-thinking,gemini-3.1-pro,grok-4.3,gpt-5.5-pro`
+- **Comprehensive**: `gpt-5.5-thinking,claude-4.8-opus-thinking,gemini-3.1-pro,grok-4.3,gpt-5.5-pro`
 - **Deep Research**: `openai-deep-research,gemini-deep-research,gpt-5.5-pro`
 - **Pick models**: Use the selected model IDs
 
@@ -105,7 +105,7 @@ The script auto-generates an output directory at `data/model-outputs/<timestamp>
    - `"html"` → `open "<output-dir>/results.html"`
    - `"markdown"` (or absent) → `open "<output-dir>/results.md"`
 
-The `--synthesise` flag runs Claude Opus 4.7 with extended thinking to synthesise responses automatically.
+The `--synthesise` flag runs Claude Opus 4.8 with extended thinking to synthesise responses automatically.
 
 ## Model Reference
 
@@ -113,7 +113,7 @@ The `--synthesise` flag runs Claude Opus 4.7 with extended thinking to synthesis
 
 | Preset | Models | Speed |
 |--------|--------|-------|
-| Defaults | gpt-5.5-thinking, claude-4.7-opus-thinking, gemini-3.1-pro, grok-4.3 | ~30s |
+| Defaults | gpt-5.5-thinking, claude-4.8-opus-thinking, gemini-3.1-pro, grok-4.3 | ~30s |
 | Quick | gemini-3-flash, grok-4.3-low, claude-4.6-sonnet | ~10s |
 | Comprehensive | Defaults + gpt-5.5-pro | ~60s |
 | Deep Research | openai-deep-research, gemini-deep-research, gpt-5.5-pro | 10-20 min |
@@ -123,7 +123,7 @@ The `--synthesise` flag runs Claude Opus 4.7 with extended thinking to synthesis
 | Model ID | Display Name | Vision | Notes |
 |----------|--------------|--------|-------|
 | gpt-5.5-thinking | GPT-5.5 | ✓ | |
-| claude-4.7-opus-thinking | Claude 4.7 Opus | ✓ | |
+| claude-4.8-opus-thinking | Claude 4.8 Opus | ✓ | |
 | grok-4.3 | Grok 4.3 | | |
 | gemini-3.1-pro | Gemini 3.1 Pro | ✓ | |
 | gemini-3-flash | Gemini 3 Flash | ✓ | |

@@ -255,7 +255,7 @@ const VISION_MODELS = [
   'gpt-5.5-pro',
   'gpt-5.4-thinking',
   'gpt-5.4-pro',
-  'claude-4.7-opus-thinking',
+  'claude-4.8-opus-thinking',
   'claude-4.6-sonnet',
   'gemini-3.1-pro',
   'gemini-3-flash',
@@ -1070,11 +1070,11 @@ async function performSynthesis(
       throw error;
     }
   } else {
-    console.log('\n\x1b[35m✨ Running Synthesis with Claude Opus 4.7\x1b[0m\n');
+    console.log('\n\x1b[35m✨ Running Synthesis with Claude Opus 4.8\x1b[0m\n');
 
     try {
       const result = await generateText({
-        model: createAnthropic({ baseURL: 'https://api.anthropic.com/v1' })('claude-opus-4-7'),
+        model: createAnthropic({ baseURL: 'https://api.anthropic.com/v1' })('claude-opus-4-8'),
         prompt: synthesisPrompt,
         maxOutputTokens: 16000,
         providerOptions: {

@@ -188,7 +188,7 @@ After opening the file, also summarise inline (2–3 sentences) so the user can 
 ```
 Which models should I query?
 
-1. ⚡ Defaults - GPT-5.5 Thinking, Claude 4.7 Opus Thinking, Gemini 3.1 Pro, Grok 4.3 (Recommended)
+1. ⚡ Defaults - GPT-5.5 Thinking, Claude 4.8 Opus Thinking, Gemini 3.1 Pro, Grok 4.3 (Recommended)
 2. 🚀 Quick - Gemini 3 Flash, Grok 4.3 Low Reasoning, Claude 4.6 Sonnet (~10s)
 3. 📊 Comprehensive - Defaults + GPT-5.5 Pro (slow, extra compute)
 4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.5 Pro (10-20 min)
@@ -206,7 +206,7 @@ If user selects **5 (Pick models)**, print this list and ask for comma-separated
 ```
 Available models:
 1. gpt-5.5-thinking (default)
-2. claude-4.7-opus-thinking (default)
+2. claude-4.8-opus-thinking (default)
 3. gemini-3.1-pro (default)
 4. grok-4.3 (default)
 5. gemini-3-flash
@@ -260,9 +260,9 @@ If an image is in the conversation, save it to:
 #### Step 4: Run the query
 
 Map selection to model IDs:
-- **Defaults**: `gpt-5.5-thinking,claude-4.7-opus-thinking,gemini-3.1-pro,grok-4.3`
+- **Defaults**: `gpt-5.5-thinking,claude-4.8-opus-thinking,gemini-3.1-pro,grok-4.3`
 - **Quick**: `gemini-3-flash,grok-4.3-low,claude-4.6-sonnet`
-- **Comprehensive**: `gpt-5.5-thinking,claude-4.7-opus-thinking,gemini-3.1-pro,grok-4.3,gpt-5.5-pro`
+- **Comprehensive**: `gpt-5.5-thinking,claude-4.8-opus-thinking,gemini-3.1-pro,grok-4.3,gpt-5.5-pro`
 - **Deep Research**: `openai-deep-research,gemini-deep-research,gpt-5.5-pro`
 
 Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars).
@@ -330,7 +330,7 @@ This inserts the synthesis at the top of `results.md` (after the `# Multi-Model 
 ```bash
 npx tsx scripts/resynthesise.ts "<output-dir>"
 ```
-This calls Claude Opus 4.7 via the Anthropic API and costs tokens.
+This calls Claude Opus 4.8 via the Anthropic API and costs tokens.
 
 #### Step 5: Open results
 
@@ -362,7 +362,7 @@ Paste an image into your message along with your question to have vision-capable
 /amm "What's in this image?" [paste image]
 ```
 
-Vision-capable models: GPT-5.5 Thinking, GPT-5.5, GPT-5.5 Pro, GPT-5.4 Thinking, Claude 4.7 Opus Thinking, Claude 4.6 Sonnet, Gemini 3.1 Pro, Gemini 3 Flash, Gemini 3.1 Flash-Lite
+Vision-capable models: GPT-5.5 Thinking, GPT-5.5, GPT-5.5 Pro, GPT-5.4 Thinking, Claude 4.8 Opus Thinking, Claude 4.6 Sonnet, Gemini 3.1 Pro, Gemini 3 Flash, Gemini 3.1 Flash-Lite
 
 Models without vision support will receive just the text prompt with a note that an image was provided.
 
@@ -467,7 +467,7 @@ data/model-outputs/
     └── individual/
         ├── gpt-5.4-thinking.md
         ├── gpt-5.5-thinking.md
-        ├── claude-4.7-opus-thinking.md
+        ├── claude-4.8-opus-thinking.md
         ├── gemini-3.1-pro.md
         └── grok-4.3.md
 ```
@@ -481,7 +481,7 @@ data/model-outputs/
 | gpt-5.5-thinking | GPT-5.5 | OpenAI | ✓ |
 | gpt-5.5-pro | GPT-5.5 Pro | OpenAI | ✓ |
 | gpt-5.4-thinking | GPT-5.4 | OpenAI | ✓ |
-| claude-4.7-opus-thinking | Claude 4.7 Opus | Anthropic | ✓ |
+| claude-4.8-opus-thinking | Claude 4.8 Opus | Anthropic | ✓ |
 | grok-4.3 | Grok 4.3 | xAI | |
 | gemini-3.1-pro | Gemini 3.1 Pro | Google | ✓ |
 | gemini-3-flash | Gemini 3 Flash | Google | ✓ |

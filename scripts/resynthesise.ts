@@ -4,7 +4,7 @@
  *
  * Usage:
  *   npx tsx scripts/resynthesise.ts <output-dir>
- *     → Re-query Claude Opus 4.7 via the Anthropic API (for Hermes/cron use).
+ *     → Re-query Claude Opus 4.8 via the Anthropic API (for Hermes/cron use).
  *
  *   npx tsx scripts/resynthesise.ts <output-dir> --file <synthesis.md>
  *     → Read synthesis text from a file (for in-session Claude Code use,
@@ -60,11 +60,11 @@ async function fetchSynthesisFromApi(dir: string): Promise<string> {
   const data = JSON.parse(readFileSync(responsesPath, 'utf-8'));
   const synthesisPrompt = generateSynthesisPrompt(data.prompt, data.results, 'executive');
 
-  console.log(`\n✨ Synthesising via Anthropic API (Claude Opus 4.7)\n   ${data.results.length} model results, prompt ${String(data.prompt).length} chars\n`);
+  console.log(`\n✨ Synthesising via Anthropic API (Claude Opus 4.8)\n   ${data.results.length} model results, prompt ${String(data.prompt).length} chars\n`);
 
   const anthropic = createAnthropic({ baseURL: 'https://api.anthropic.com/v1' });
   const res = await generateText({
-    model: anthropic('claude-opus-4-7'),
+    model: anthropic('claude-opus-4-8'),
     prompt: synthesisPrompt,
     maxOutputTokens: 16000,
     providerOptions: {
