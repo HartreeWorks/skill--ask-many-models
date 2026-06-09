@@ -1509,10 +1509,21 @@ async function runQuery(
   // Add quick results to allResults
   allResults.push(...quickResults);
 
+  // Persist the completed quick/standard results to disk NOW, before we block
+  // on deep research. Deep-research models (esp. Gemini) have high run-to-run
+  // variance and can run 25+ minutes; without this, a slow or manually-killed
+  // deep-research model leaves individual/*.md and responses.json unwritten,
+  // discarding every finished model's output. saveResults is idempotent and is
+  // called again at the end with the full set.
+  if (!options.noSave && deepResearchPromises.length > 0 && quickResults.length > 0) {
+    saveResults(outputDir, prompt, allResults, systemPrompt || undefined);
+  }
+
   // Wait for deep research to complete (this can take 10-20 min)
   if (deepResearchPromises.length > 0) {
-    console.log('\n\x1b[1m\x1b[33m⏳ Waiting for deep research to complete (this may take 10-20 minutes)...\x1b[0m');
-    console.log('\x1b[2m   Quick model results are already available in the live file.\x1b[0m\n');
+    console.log('\n\x1b[1m\x1b[33m⏳ Waiting for deep research to complete (this may take 10-25 minutes)...\x1b[0m');
+    console.log('\x1b[2m   Finished model results are already saved to disk (individual/*.md, responses.json)\x1b[0m');
+    console.log('\x1b[2m   and in the live file — safe to Ctrl-C if you do not need deep research.\x1b[0m\n');
 
     // Progress display (updates every 1s for smooth timer, API polling happens every 10s internally)
     const isTTY = process.stdout.isTTY;

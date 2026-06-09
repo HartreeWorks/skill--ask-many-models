@@ -129,7 +129,7 @@
       "display_name": "OpenAI Deep Research",
       "type": "api",
       "deep_research": true,
-      "timeout_seconds": 3600,
+      "timeout_seconds": 2400,
       "poll_interval_ms": 10000
     },
     "gemini-deep-research": {
@@ -138,7 +138,7 @@
       "display_name": "Gemini Deep Research",
       "type": "api",
       "deep_research": true,
-      "timeout_seconds": 3600,
+      "timeout_seconds": 1500,
       "poll_interval_ms": 10000
     }
   },
