@@ -6,10 +6,11 @@ import { openai } from '@ai-sdk/openai';
 import { google } from '@ai-sdk/google';
 import { xai } from '@ai-sdk/xai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { mistral } from '@ai-sdk/mistral';
 import type { LanguageModel } from 'ai';
 
 export interface ModelConfig {
-  provider: 'openai' | 'google' | 'xai' | 'anthropic' | 'openai-deep' | 'gemini-deep';
+  provider: 'openai' | 'google' | 'xai' | 'anthropic' | 'mistral' | 'openai-deep' | 'gemini-deep';
   display_name?: string;
   reasoning?: boolean;
   reasoning_effort?: 'low' | 'medium' | 'high';
@@ -76,6 +77,8 @@ export function createModel(modelName: string, config: Config): LanguageModel | 
       });
       return anthropicProvider(modelConfig.model_id);
     }
+    case 'mistral':
+      return mistral(modelConfig.model_id);
     case 'openai-deep':
     case 'gemini-deep':
       // Deep research models are handled separately, not via Vercel AI SDK

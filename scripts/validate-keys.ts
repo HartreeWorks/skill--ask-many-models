@@ -120,6 +120,29 @@ async function validateAnthropic(): Promise<ValidationResult> {
   }
 }
 
+async function validateMistral(): Promise<ValidationResult> {
+  const key = process.env.MISTRAL_API_KEY;
+  if (!key || key === '...' || key.length < 20) {
+    return { provider: 'mistral', valid: false, error: 'No valid key configured' };
+  }
+
+  try {
+    const response = await fetch('https://api.mistral.ai/v1/models', {
+      headers: { 'Authorization': `Bearer ${key}` }
+    });
+
+    if (response.ok) {
+      return { provider: 'mistral', valid: true };
+    } else if (response.status === 401) {
+      return { provider: 'mistral', valid: false, error: 'Invalid API key' };
+    } else {
+      return { provider: 'mistral', valid: false, error: `HTTP ${response.status}` };
+    }
+  } catch (e) {
+    return { provider: 'mistral', valid: false, error: String(e) };
+  }
+}
+
 async function main() {
   const provider = process.argv[2];
 
@@ -140,6 +163,9 @@ async function main() {
       case 'anthropic':
         results = [await validateAnthropic()];
         break;
+      case 'mistral':
+        results = [await validateMistral()];
+        break;
       default:
         console.error(`Unknown provider: ${provider}`);
         process.exit(1);
@@ -150,7 +176,8 @@ async function main() {
       validateOpenAI(),
       validateGoogle(),
       validateXAI(),
-      validateAnthropic()
+      validateAnthropic(),
+      validateMistral()
     ]);
   }
 

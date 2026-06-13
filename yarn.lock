@@ -27,6 +27,14 @@
     "@ai-sdk/provider" "3.0.7"
     "@ai-sdk/provider-utils" "4.0.13"
 
+"@ai-sdk/mistral@^3.0.39":
+  version "3.0.39"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/mistral/-/mistral-3.0.39.tgz#bf939371a570025ec459fe50c7fa31151b1dc74c"
+  integrity sha512-drPs9K3a7A8LKvISzbXDoKlRD00CqeacKSSrjFDswCfCr1xS/4/GYUyJDt7UKykHW//iiiElSFWoea95yRQchg==
+  dependencies:
+    "@ai-sdk/provider" "3.0.10"
+    "@ai-sdk/provider-utils" "4.0.29"
+
 "@ai-sdk/openai-compatible@2.0.26":
   version "2.0.26"
   resolved "https://registry.yarnpkg.com/@ai-sdk/openai-compatible/-/openai-compatible-2.0.26.tgz#9d9f5c003dd9e5f06d5e0c0e6f49239bd517eb7b"
@@ -60,6 +68,22 @@
     "@ai-sdk/provider" "3.0.8"
     "@standard-schema/spec" "^1.1.0"
     eventsource-parser "^3.0.6"
+
+"@ai-sdk/provider-utils@4.0.29":
+  version "4.0.29"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider-utils/-/provider-utils-4.0.29.tgz#786e6485366b035e4b5f5fd288ccfdf4be485f07"
+  integrity sha512-uhukHaCBvqkwBHkT8C2PrnqKTCoLn3pdHXqtcR9I8ErH+flbzgW4o7VHSNIup9LRu+WBvZIZDQLsx6rwl2tiOA==
+  dependencies:
+    "@ai-sdk/provider" "3.0.10"
+    "@standard-schema/spec" "^1.1.0"
+    eventsource-parser "^3.0.8"
+
+"@ai-sdk/provider@3.0.10":
+  version "3.0.10"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/provider/-/provider-3.0.10.tgz#abfb6776f699951f9b8ac20cf1d42a3fc7d79752"
+  integrity sha512-Q3BZ27qfpYqnCYGvE3vt+Qi6LGOF9R5Nmzn+9JoM1lCRsD9mYaIhfJLkSunN48nfGXJ6n+XNV0J/XVpqGQl7Dw==
+  dependencies:
+    json-schema "^0.4.0"
 
 "@ai-sdk/provider@3.0.7":
   version "3.0.7"
@@ -487,6 +511,11 @@ eventsource-parser@^3.0.6:
   version "3.0.6"
   resolved "https://registry.yarnpkg.com/eventsource-parser/-/eventsource-parser-3.0.6.tgz#292e165e34cacbc936c3c92719ef326d4aeb4e90"
   integrity sha512-Vo1ab+QXPzZ4tCa8SwIHJFaSzy4R6SHf7BY79rFBDf0idraZWAkYrDjDj8uWaSm3S2TK+hJ7/t1CEmZ7jXw+pg==
+
+eventsource-parser@^3.0.8:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/eventsource-parser/-/eventsource-parser-3.1.0.tgz#4e198eb91cd333d0a8ddcc036502b3618a25f449"
+  integrity sha512-kJezFj9YFAMLeORyi7aCLxLbD5/qWMQnoMVlVPyHIll7lgRJCc3JVln9Vgl9nwQi0YkMnhdGTMNn7CkRRAptMg==
 
 extend@^3.0.2:
   version "3.0.2"

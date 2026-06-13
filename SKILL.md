@@ -218,6 +218,7 @@ Available models:
 11. gpt-5.4-thinking
 12. gpt-5.4-pro (slow, extra compute)
 13. gemini-3.1-flash-lite
+14. magistral-medium (Mistral's smartest — frontier reasoning)
 
 Enter numbers (e.g. 1,2,5). Add SYS for a custom system prompt (e.g. "1,3 SYS"):
 ```
@@ -449,6 +450,7 @@ Required keys:
 - `ANTHROPIC_API_KEY` - For Claude models
 - `GOOGLE_GENERATIVE_AI_API_KEY` - For Gemini models
 - `XAI_API_KEY` - For Grok models
+- `MISTRAL_API_KEY` - For Mistral / Magistral models
 
 ### Model Configuration
 
@@ -489,6 +491,7 @@ data/model-outputs/
 | gpt-5.4-pro | GPT-5.4 Pro | OpenAI | ✓ |
 | claude-4.6-sonnet | Claude 4.6 Sonnet | Anthropic | ✓ |
 | grok-4.3-low | Grok 4.3 Low Reasoning | xAI | |
+| magistral-medium | Magistral Medium | Mistral | |
 
 ### Deep Research Models
 

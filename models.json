@@ -116,6 +116,13 @@
       "reasoning": true,
       "reasoning_effort": "low"
     },
+    "magistral-medium": {
+      "provider": "mistral",
+      "model_id": "magistral-medium-latest",
+      "display_name": "Magistral Medium",
+      "type": "api",
+      "max_tokens": 32000
+    },
     "gpt-5.5-pro-browser": {
       "provider": "openai",
       "display_name": "GPT-5.5 Pro (Browser)",
