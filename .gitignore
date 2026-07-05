@@ -17,3 +17,7 @@ data/model-outputs/
 
 # Private local data (not published)
 data/
+
+# Yarn build artifacts
+.yarn/
+.pnp.*
