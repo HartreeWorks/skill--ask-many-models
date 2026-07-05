@@ -265,11 +265,16 @@ export async function queryGeminiDeepResearch(config: DeepResearchConfig): Promi
     : config.prompt;
 
   try {
-    // Start the deep research interaction
+    // Start the deep research interaction.
+    // NOTE: @google/genai v2 requires the new Interactions schema (v1.x sent a
+    // legacy schema the server now rejects with a 400). collaborative_planning is
+    // disabled so the agent runs autonomously in the background instead of pausing
+    // in a "requires_action" state waiting for plan confirmation.
     const interaction = await client.interactions.create({
-      input: fullPrompt,
       agent: config.modelConfig.model_id,
+      input: fullPrompt,
       background: true,
+      agent_config: { type: 'deep-research', collaborative_planning: false },
     });
 
     const requestId = interaction.id;
@@ -289,9 +294,14 @@ export async function queryGeminiDeepResearch(config: DeepResearchConfig): Promi
       const result = await client.interactions.get(requestId);
 
       if (result.status === 'completed') {
-        const outputs = result.outputs || [];
-        const lastOutput = outputs[outputs.length - 1] as { text?: string } | undefined;
-        const reportText = lastOutput?.text || 'No output text available';
+        // v2 exposes the concatenated final text via `output_text` (the v1 `outputs`
+        // array no longer exists). Fall back to scanning steps for a model-output block.
+        const stepText = (result.steps || [])
+          .filter((s: any) => s?.type === 'model_output' || 'text' in (s || {}))
+          .map((s: any) => s.text)
+          .filter(Boolean)
+          .join('\n');
+        const reportText = result.output_text || stepText || 'No output text available';
 
         config.onProgress?.({
           modelName: config.modelName,
@@ -309,11 +319,13 @@ export async function queryGeminiDeepResearch(config: DeepResearchConfig): Promi
         };
       }
 
-      if (result.status === 'failed') {
+      // Terminal non-success states. Without this, states like "requires_action" or
+      // "budget_exceeded" would spin the poll loop until the timeout fires.
+      if (['failed', 'cancelled', 'incomplete', 'budget_exceeded', 'requires_action'].includes(result.status)) {
         return {
           model: config.modelName,
           status: 'error',
-          error: `Research failed: ${(result as any).error || 'Unknown error'}`,
+          error: `Research ${result.status}: ${(result as any).error || 'no further detail'}`,
           latencyMs: Date.now() - startTime,
           requestId,
         };
