@@ -5,7 +5,7 @@
  * Usage:
  *   yarn query "What are the pros and cons of Rust vs Go?"
  *   yarn query --preset quick "Explain quantum computing"
- *   yarn query --models gpt-5.5-thinking,gemini-3-flash "Your question"
+ *   yarn query --models gpt-5.6-sol,gemini-3-flash "Your question"
  */
 
 import { config as dotenvConfig } from 'dotenv';
@@ -251,12 +251,15 @@ class ProgressTracker extends EventEmitter {
 // Models known to support vision
 // NOTE: Update this list when changing model IDs in models.json
 const VISION_MODELS = [
+  'gpt-5.6-sol',
   'gpt-5.5-thinking',
   'gpt-5.5-pro',
   'gpt-5.4-thinking',
   'gpt-5.4-pro',
   'claude-4.8-opus-thinking',
   'claude-4.6-sonnet',
+  'grok-4.5',
+  'grok-4.5-low',
   'gemini-3.1-pro',
   'gemini-3-flash',
   'gemini-3.1-flash-lite',

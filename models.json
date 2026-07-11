@@ -1,27 +1,67 @@
 {
   "presets": {
+    "defaults": {
+      "description": "Recommended cross-provider frontier models",
+      "models": [
+        "gpt-5.6-sol",
+        "claude-4.8-opus-thinking",
+        "gemini-3.1-pro",
+        "grok-4.5"
+      ],
+      "timeout_seconds": 600
+    },
     "quick": {
       "description": "Fast responses from efficient models",
-      "models": ["gemini-3-flash", "grok-4.3-low", "claude-4.6-sonnet"],
+      "models": [
+        "gemini-3-flash",
+        "grok-4.5",
+        "claude-4.6-sonnet"
+      ],
       "timeout_seconds": 180
     },
     "comprehensive": {
       "description": "All default models plus GPT-5.5 Pro",
-      "models": ["gpt-5.5-thinking", "claude-4.8-opus-thinking", "gemini-3.1-pro", "grok-4.3", "gpt-5.5-pro"],
+      "models": [
+        "gpt-5.6-sol",
+        "claude-4.8-opus-thinking",
+        "gemini-3.1-pro",
+        "grok-4.5",
+        "gpt-5.5-pro"
+      ],
       "timeout_seconds": 600
     },
     "deep-research": {
       "description": "Deep research (10-20 min per model)",
-      "models": ["openai-deep-research", "gemini-deep-research", "gpt-5.5-pro"],
+      "models": [
+        "openai-deep-research",
+        "gemini-deep-research",
+        "gpt-5.5-pro"
+      ],
       "timeout_seconds": 3600
     },
     "comprehensive-deep": {
-      "description": "Quick models + deep research",
-      "models": ["gpt-5.5-thinking", "claude-4.8-opus-thinking", "gemini-3.1-pro", "grok-4.3", "openai-deep-research", "gemini-deep-research"],
+      "description": "Default models plus OpenAI and Gemini deep research",
+      "models": [
+        "gpt-5.6-sol",
+        "claude-4.8-opus-thinking",
+        "gemini-3.1-pro",
+        "grok-4.5",
+        "openai-deep-research",
+        "gemini-deep-research"
+      ],
       "timeout_seconds": 3600
     }
   },
   "models": {
+    "gpt-5.6-sol": {
+      "provider": "openai",
+      "model_id": "gpt-5.6-sol",
+      "display_name": "GPT-5.6 Sol",
+      "type": "api",
+      "max_tokens": 64000,
+      "reasoning": true,
+      "reasoning_effort": "high"
+    },
     "gpt-5.5-thinking": {
       "provider": "openai",
       "model_id": "gpt-5.5",
@@ -98,19 +138,19 @@
       "type": "api",
       "max_tokens": 16000
     },
-    "grok-4.3": {
+    "grok-4.5": {
       "provider": "xai",
-      "model_id": "grok-4.3",
-      "display_name": "Grok 4.3",
+      "model_id": "grok-4.5",
+      "display_name": "Grok 4.5",
       "type": "api",
       "max_tokens": 32000,
       "reasoning": true,
       "reasoning_effort": "high"
     },
-    "grok-4.3-low": {
+    "grok-4.5-low": {
       "provider": "xai",
-      "model_id": "grok-4.3",
-      "display_name": "Grok 4.3 Low Reasoning",
+      "model_id": "grok-4.5",
+      "display_name": "Grok 4.5 Low Reasoning",
       "type": "api",
       "max_tokens": 16000,
       "reasoning": true,
@@ -150,7 +190,7 @@
     }
   },
   "defaults": {
-    "preset": "quick",
+    "preset": "defaults",
     "synthesis_depth": "executive",
     "max_tokens": 4000
   },

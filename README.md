@@ -1,18 +1,14 @@
 # Ask Many Models
 
-A Claude Code skill for querying multiple AI models (GPT, Claude, Gemini, Grok) in parallel and synthesising their responses. Includes deep research support.
-
-![Ask Many Models in action](screenshots/amm-skill-question.jpeg)
-
-![Ask Many Models response](screenshots/amm-skill-answer.jpeg)
-
-![Ask Many Models response continued](screenshots/amm-skill-answer-2.jpeg)
+A Claude Code skill for querying multiple AI models (GPT, Claude, Gemini, Grok) in parallel and synthesising their responses. The recommended set uses GPT-5.6 Sol with high reasoning effort alongside frontier models from other providers.
 
 ## Usage
 
 **Within Claude Code:** Say "Ask many models: [your question]" and Claude will handle the rest.
 
 **Claude command:** Use `/amm [your question]` if you want an explicit command form inside Claude.
+
+This skill does not install or expose a standalone `amm` terminal command.
 
 **Discussion workflow:** See below.
 
@@ -61,6 +57,12 @@ npx skills add HartreeWorks/skill--ask-many-models
 ```
 
 If you get "command not found", [install Node](https://github.com/HartreeWorks/skills/blob/main/how-to-install-node.md) then try again.
+
+## API setup
+
+Copy `.env.example` to `.env` inside the installed skill and add keys for the providers you want to query. The `.env` file is ignored by Git.
+
+Prompts, code, images, and supplied context are sent to each selected model provider. Do not include secrets or information you are not authorised to share with those providers.
 
 ## About
 

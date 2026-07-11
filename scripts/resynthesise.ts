@@ -4,12 +4,12 @@
  *
  * Usage:
  *   npx tsx scripts/resynthesise.ts <output-dir>
- *     → Re-query Claude Opus 4.8 via the Anthropic API (for Hermes/cron use).
+ *     → Re-query Claude Opus 4.8 via the Anthropic API (for unattended use).
  *
  *   npx tsx scripts/resynthesise.ts <output-dir> --file <synthesis.md>
  *     → Read synthesis text from a file (for in-session Claude Code use,
- *       where an Opus subagent has produced the synthesis using Peter's
- *       Max quota rather than billable API tokens).
+ *       where an Opus subagent has produced the synthesis using the
+ *       operator's plan quota rather than billable API tokens).
  *
  * In both modes the synthesis is placed after the `# Multi-Model Query`
  * metadata block and before the first model section, and results.html is

@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+.yarn/
+.yarnrc.yml
 
 # Environment
 .env
@@ -14,10 +16,9 @@ dist/
 data/model-outputs/
 
 # User config overrides (not shipped)
+config.json
+data/system-prompts.json
+data/user-defaults.json
 
 # Private local data (not published)
 data/
-
-# Yarn build artifacts
-.yarn/
-.pnp.*

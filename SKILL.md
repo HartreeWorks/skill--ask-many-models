@@ -1,6 +1,6 @@
 ---
 name: ask-many-models
-description: Query multiple AI models and synthesise the results.
+description: Query different AI model families in parallel and synthesise their answers. Use when the user asks to ask many models, compare GPT/Claude/Gemini/Grok perspectives, get cross-model consensus or disagreement, or invoke /ask-many-models or /amm. For repeated samples from one model, use best-of-n instead.
 ---
 
 # Ask Many Models
@@ -44,7 +44,7 @@ The goal: surface what's *really* motivating the question and what kind of answe
 
 **Always include a motivation question.** Draft 3–4 motivation options based on the *specific seed*, plus an Other free-text field. Tailoring matters more than completeness — generic motivation options are worse than skipping the question.
 
-Examples — for a seed like *"Should I rewrite the IWR onboarding flow?"*:
+Examples — for a seed like *"Should I rewrite an email app's onboarding flow?"*:
 1. Decide whether to do the rewrite at all
 2. Stress-test a rewrite I'm already planning
 3. Generate options I haven't considered
@@ -68,7 +68,7 @@ For a seed like *"Explain how MCP servers work"*:
 2. "Who is the audience?"
 3. "How long should the answer be?"
 
-**Good (tailored to *"Should I sunset the IWR Outlook add-in?"*):**
+**Good (tailored to *"Should I sunset the Outlook add-in?"*):**
 1. What's really driving this? (4 motivation options + Other)
 2. Which matters more: cutting maintenance burden, or keeping the user base happy?
 3. Timeframe — next 3 months, or next 2 years?
@@ -104,7 +104,7 @@ or use free text where Other applies, e.g. "Q1: I want to compare against altern
 
 After clarification, draft 3–5 *adjacent* angles or sub-questions the seed didn't explicitly ask but that often pay off. Each option needs a one-line rationale.
 
-Examples for *"Should I sunset IWR Outlook?"*:
+Examples for *"Should I sunset the Outlook add-in?"*:
 - "Also ask: what would I need to see to change my mind?" — surfaces update conditions.
 - "Also ask: top 3 failure modes either way." — symmetric risk analysis.
 - "Reframe as: if I were starting today, would I build this?" — disentangles sunk cost.
@@ -188,8 +188,8 @@ After opening the file, also summarise inline (2–3 sentences) so the user can 
 ```
 Which models should I query?
 
-1. ⚡ Defaults - GPT-5.5 Thinking, Claude 4.8 Opus Thinking, Gemini 3.1 Pro, Grok 4.3 (Recommended)
-2. 🚀 Quick - Gemini 3 Flash, Grok 4.3 Low Reasoning, Claude 4.6 Sonnet (~10s)
+1. ⚡ Defaults - GPT-5.6 Sol (high effort), Claude 4.8 Opus Thinking, Gemini 3.1 Pro, Grok 4.5 (Recommended)
+2. 🚀 Quick - Gemini 3 Flash, Grok 4.5, Claude 4.6 Sonnet (~10s)
 3. 📊 Comprehensive - Defaults + GPT-5.5 Pro (slow, extra compute)
 4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.5 Pro (10-20 min)
 5. 🔧 Pick models - Choose individual models
@@ -205,12 +205,12 @@ If user selects **5 (Pick models)**, print this list and ask for comma-separated
 
 ```
 Available models:
-1. gpt-5.5-thinking (default)
+1. gpt-5.6-sol (high effort, default)
 2. claude-4.8-opus-thinking (default)
 3. gemini-3.1-pro (default)
-4. grok-4.3 (default)
+4. grok-4.5 (default)
 5. gemini-3-flash
-6. grok-4.3-low
+6. grok-4.5-low
 7. claude-4.6-sonnet
 8. gpt-5.5-pro (slow, extra compute)
 9. openai-deep-research (10-20 min)
@@ -229,7 +229,7 @@ Then map user's numbers to model IDs. Check for `SYS` in the input as described 
 
 Only run this step if the user included `SYS` in their model selection input. Otherwise skip to Step 3.
 
-1. **Check for saved prompts** in `/Users/ph/.claude/skills/ask-many-models/data/system-prompts.json`
+1. **Check for saved prompts** in `$HOME/.claude/skills/ask-many-models/data/system-prompts.json`. If the file does not exist, treat the saved-prompt list as empty.
 2. If saved prompts exist, show them with letter labels:
 
 ```
@@ -247,7 +247,9 @@ Select (A/B/.../N):
 4. If the user selects **N**, ask them to type/paste a system prompt. Then ask if they want to save it:
    - If yes, ask for a name, then add it to `system-prompts.json` using:
      ```bash
-     jq --arg name "<name>" --arg content "<content>" '.prompts += [{"name": $name, "content": $content}]' /Users/ph/.claude/skills/ask-many-models/data/system-prompts.json > /tmp/amm-sysprompts-tmp.json && mv /tmp/amm-sysprompts-tmp.json /Users/ph/.claude/skills/ask-many-models/data/system-prompts.json
+     mkdir -p "$HOME/.claude/skills/ask-many-models/data"
+     if [ ! -f "$HOME/.claude/skills/ask-many-models/data/system-prompts.json" ]; then printf '{"prompts":[]}\n' > "$HOME/.claude/skills/ask-many-models/data/system-prompts.json"; fi
+     jq --arg name "<name>" --arg content "<content>" '.prompts += [{"name": $name, "content": $content}]' "$HOME/.claude/skills/ask-many-models/data/system-prompts.json" > /tmp/amm-sysprompts-tmp.json && mv /tmp/amm-sysprompts-tmp.json "$HOME/.claude/skills/ask-many-models/data/system-prompts.json"
      ```
 5. Save the system prompt to a temp file and pass it via `--system-prompt <path>` in Step 4.
 
@@ -256,22 +258,22 @@ If the user presses Enter (empty input), skip — no system prompt.
 #### Step 3: Check for images
 
 If an image is in the conversation, save it to:
-`/Users/ph/.claude/skills/ask-many-models/data/model-outputs/image-TIMESTAMP.png`
+`$HOME/.claude/skills/ask-many-models/data/model-outputs/image-TIMESTAMP.png`
 
 #### Step 4: Run the query
 
 Map selection to model IDs:
-- **Defaults**: `gpt-5.5-thinking,claude-4.8-opus-thinking,gemini-3.1-pro,grok-4.3`
-- **Quick**: `gemini-3-flash,grok-4.3-low,claude-4.6-sonnet`
-- **Comprehensive**: `gpt-5.5-thinking,claude-4.8-opus-thinking,gemini-3.1-pro,grok-4.3,gpt-5.5-pro`
+- **Defaults**: `gpt-5.6-sol,claude-4.8-opus-thinking,gemini-3.1-pro,grok-4.5`
+- **Quick**: `gemini-3-flash,grok-4.5,claude-4.6-sonnet`
+- **Comprehensive**: `gpt-5.6-sol,claude-4.8-opus-thinking,gemini-3.1-pro,grok-4.5,gpt-5.5-pro`
 - **Deep Research**: `openai-deep-research,gemini-deep-research,gpt-5.5-pro`
 
 Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars).
 
-Run the query **without** `--synthesise` — synthesis happens in Step 4b using an in-session subagent so it rides Peter's existing Max quota instead of billing the Anthropic API:
+Run the query **without** `--synthesise` — synthesis happens in Step 4b using an in-session subagent so it uses the operator's existing plan quota instead of billing the Anthropic API:
 
 ```bash
-cd /Users/ph/.claude/skills/ask-many-models && yarn query \
+cd "$HOME/.claude/skills/ask-many-models" && yarn query \
   --models "<model-ids>" \
   --output-format both \
   [--image "<path>"] \
@@ -321,13 +323,13 @@ prompt: |
 Once the subagent returns the synthesis file path, run the insert helper:
 
 ```bash
-cd /Users/ph/.claude/skills/ask-many-models && \
+cd "$HOME/.claude/skills/ask-many-models" && \
   npx tsx scripts/resynthesise.ts "<output-dir>" --file "<synthesis-file>"
 ```
 
 This inserts the synthesis at the top of `results.md` (after the `# Multi-Model Query` metadata, before the first model section) and regenerates `results.html`.
 
-**Fallback** — if for any reason you need API-based synthesis (running from Hermes/cron, or Claude's in-session context is wedged), omit `--file`:
+**Fallback** — if for any reason you need API-based synthesis (running unattended, or the in-session context is wedged), omit `--file`:
 ```bash
 npx tsx scripts/resynthesise.ts "<output-dir>"
 ```
@@ -335,7 +337,7 @@ This calls Claude Opus 4.8 via the Anthropic API and costs tokens.
 
 #### Step 5: Open results
 
-Say "Querying: [models]" and open the results file. Check `data/user-defaults.json` for `open_preference`:
+Say "Querying: [models]" and open the results file. If `data/user-defaults.json` exists, check it for `open_preference`:
 - `"html"` → `open "<output-dir>/results.html"`
 - `"markdown"` (or absent) → `open "<output-dir>/results.md"`
 
@@ -349,7 +351,7 @@ This skill is intended to be used from Claude, either via natural language or th
 
 ### Output format
 
-Results can be output as markdown, HTML, or both. The preference is stored in `data/user-defaults.json` under `output_format`. The HTML version uses serif typography optimised for long-form reading.
+Results can be output as markdown, HTML, or both. An optional preference can be stored in `data/user-defaults.json` under `output_format`. The HTML version uses serif typography optimised for long-form reading.
 
 - `--output-format markdown` — markdown only (default for script invocation)
 - `--output-format html` — HTML only
@@ -363,7 +365,7 @@ Paste an image into your message along with your question to have vision-capable
 /amm "What's in this image?" [paste image]
 ```
 
-Vision-capable models: GPT-5.5 Thinking, GPT-5.5, GPT-5.5 Pro, GPT-5.4 Thinking, Claude 4.8 Opus Thinking, Claude 4.6 Sonnet, Gemini 3.1 Pro, Gemini 3 Flash, Gemini 3.1 Flash-Lite
+Vision-capable models: GPT-5.6 Sol, GPT-5.5 Thinking, GPT-5.5 Pro, GPT-5.4 Thinking, Claude 4.8 Opus Thinking, Claude 4.6 Sonnet, Grok 4.5, Grok 4.5 Low, Gemini 3.1 Pro, Gemini 3 Flash, Gemini 3.1 Flash-Lite
 
 Models without vision support will receive just the text prompt with a note that an image was provided.
 
@@ -375,10 +377,11 @@ The skill currently runs through the local `yarn query` tooling in this director
 
 | Preset | Models | Use Case |
 |--------|--------|----------|
-| `quick` | Gemini 3 Flash, Grok 4.3 Low Reasoning, Claude 4.6 Sonnet | Fast responses (~10s) |
+| `defaults` | GPT-5.6 Sol, Claude 4.8 Opus, Gemini 3.1 Pro, Grok 4.5 | Recommended cross-provider set |
+| `quick` | Gemini 3 Flash, Grok 4.5, Claude 4.6 Sonnet | Fast responses (~10s) |
 | `comprehensive` | Defaults + GPT-5.5 Pro | Thorough coverage (~60s) |
 | `deep-research` | OpenAI Deep Research, Gemini Deep Research, GPT-5.5 Pro | In-depth research (API, 10-20 min) |
-| `comprehensive-deep` | Quick models + deep research | Best of both worlds |
+| `comprehensive-deep` | Defaults + OpenAI/Gemini deep research | Broad frontier and research coverage |
 
 ## Deep Research Mode
 
@@ -390,19 +393,13 @@ From Claude, choose the "Deep Research" option during model selection.
 
 When deep research is selected:
 1. **Duration warning** is shown (10-20 minutes expected)
-2. **Context picker** lets you add files/folders as background context
-3. **Quick models** return results in ~30 seconds with preliminary synthesis
-4. **Deep research** shows progress updates every 10 seconds
-5. **Final synthesis** updates when deep research completes
-6. **Desktop notification** fires on completion
+2. **Deep research** models run in parallel with progress updates
+3. **Final synthesis** is inserted after the selected models complete
+4. **Desktop notification** fires on completion when notifications are available
 
 ### Context Files
 
-Add context to your deep research queries:
-
-1. When prompted, select "Add context file/folder..."
-2. Choose a file (`.md`, `.txt`) or folder
-3. Context is prepended to the prompt for all models
+Add context to a deep research query by passing a file (`.md`, `.txt`) or folder with `--context`. Its contents are prepended to the prompt for all selected models.
 
 This is useful for:
 - Research related to a specific project
@@ -411,15 +408,13 @@ This is useful for:
 
 ### How It Works
 
-1. Quick models (GPT, Claude, Gemini, Grok) query in parallel → results in ~30s
-2. Deep research models start in background with progress polling
-3. Preliminary synthesis runs with quick model responses
-4. Deep research updates show status every 10 seconds
-5. Final synthesis incorporates deep research findings when complete
+1. Selected research models start in parallel with progress polling.
+2. Each completed response is written to the output directory.
+3. In-session synthesis incorporates the successful responses when the run completes.
 
 ## Synthesis Approach
 
-Synthesis is produced by an in-session Opus subagent by default (see Step 4b above) so it rides Peter's Max quota. The older API-path synthesis (via `yarn query --synthesise` or `resynthesise.ts` without `--file`) still works and is kept as a fallback for Hermes/cron runs.
+Synthesis is produced by an in-session Opus subagent by default (see Step 4b above) so it uses the operator's existing plan quota. The older API-path synthesis (via `yarn query --synthesise` or `resynthesise.ts` without `--file`) still works and is kept as a fallback for scheduled or unattended runs.
 
 The synthesis identifies:
 
@@ -468,10 +463,10 @@ data/model-outputs/
     ├── responses.json      # Raw API responses
     └── individual/
         ├── gpt-5.4-thinking.md
-        ├── gpt-5.5-thinking.md
+        ├── gpt-5.6-sol.md
         ├── claude-4.8-opus-thinking.md
         ├── gemini-3.1-pro.md
-        └── grok-4.3.md
+        └── grok-4.5.md
 ```
 
 ## Available Models
@@ -480,17 +475,18 @@ data/model-outputs/
 
 | Model ID | Display Name | Provider | Vision |
 |----------|--------------|----------|--------|
+| gpt-5.6-sol | GPT-5.6 Sol (high effort) | OpenAI | ✓ |
 | gpt-5.5-thinking | GPT-5.5 | OpenAI | ✓ |
 | gpt-5.5-pro | GPT-5.5 Pro | OpenAI | ✓ |
 | gpt-5.4-thinking | GPT-5.4 | OpenAI | ✓ |
 | claude-4.8-opus-thinking | Claude 4.8 Opus | Anthropic | ✓ |
-| grok-4.3 | Grok 4.3 | xAI | |
+| grok-4.5 | Grok 4.5 | xAI | ✓ |
 | gemini-3.1-pro | Gemini 3.1 Pro | Google | ✓ |
 | gemini-3-flash | Gemini 3 Flash | Google | ✓ |
 | gemini-3.1-flash-lite | Gemini 3.1 Flash-Lite | Google | ✓ |
 | gpt-5.4-pro | GPT-5.4 Pro | OpenAI | ✓ |
 | claude-4.6-sonnet | Claude 4.6 Sonnet | Anthropic | ✓ |
-| grok-4.3-low | Grok 4.3 Low Reasoning | xAI | |
+| grok-4.5-low | Grok 4.5 Low Reasoning | xAI | ✓ |
 | magistral-medium | Magistral Medium | Mistral | |
 
 ### Deep Research Models
