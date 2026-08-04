@@ -27,6 +27,8 @@ export interface ModelConfig {
   deep_research?: boolean;
   poll_interval_ms?: number;
   web_search?: boolean;
+  /** Model accepts image input. Single source of truth — do not duplicate. */
+  vision?: boolean;
 }
 
 export interface PresetConfig {
@@ -143,6 +145,47 @@ export function listPresets(config: Config): void {
     console.log(`    Models: ${preset.models.join(', ')}`);
     console.log('');
   }
+}
+
+/**
+ * Print the interactive selection menu.
+ *
+ * This is the single source of truth for what the skill offers the user —
+ * both lists are rendered from models.json, so adding or renaming a model or
+ * preset there is the only edit needed.
+ */
+export function printMenu(config: Config, options: { pick?: boolean } = {}): void {
+  if (options.pick) {
+    console.log('\nAvailable models:\n');
+    const names = Object.keys(config.models);
+    names.forEach((name, i) => {
+      const model = config.models[name];
+      const tags: string[] = [];
+      if (model.vision) tags.push('vision');
+      if (model.slow) tags.push('slow');
+      if (model.deep_research) tags.push('deep research');
+      if (model.type === 'browser') tags.push('requires --chrome');
+      const tagNote = tags.length > 0 ? ` [${tags.join(', ')}]` : '';
+      console.log(`  ${i + 1}. ${name} — ${model.display_name ?? name} (${model.provider})${tagNote}`);
+    });
+    console.log('\nEnter numbers (e.g. 1,2,5). Add SYS for a custom system prompt (e.g. "1,3 SYS"):\n');
+    return;
+  }
+
+  console.log('\nWhich models should I query?\n');
+  const presetNames = Object.keys(config.presets);
+  presetNames.forEach((name, i) => {
+    const preset = config.presets[name];
+    const recommended = name === config.defaults.preset ? '  ← default' : '';
+    const models = preset.models
+      .map(m => config.models[m]?.display_name ?? m)
+      .join(', ');
+    console.log(`  ${i + 1}. ${name} — ${preset.description}${recommended}`);
+    console.log(`     ${models}`);
+  });
+  console.log(`  ${presetNames.length + 1}. pick — choose individual models`);
+  console.log('\nTo use a custom system prompt, add SYS after the number (e.g. "1 SYS").');
+  console.log(`\nEnter a number (1-${presetNames.length + 1}):\n`);
 }
 
 /**

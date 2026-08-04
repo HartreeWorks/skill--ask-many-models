@@ -27,6 +27,7 @@ import {
   presetRequiresBrowser,
   listPresets,
   listModels,
+  printMenu,
   isDeepResearchModel,
   getDeepResearchModels,
   getQuickModels,
@@ -250,21 +251,6 @@ class ProgressTracker extends EventEmitter {
 
 // Models known to support vision
 // NOTE: Update this list when changing model IDs in models.json
-const VISION_MODELS = [
-  'gpt-5.6-sol',
-  'gpt-5.5-thinking',
-  'gpt-5.5-pro',
-  'gpt-5.4-thinking',
-  'gpt-5.4-pro',
-  'claude-4.8-opus-thinking',
-  'claude-4.6-sonnet',
-  'grok-4.5',
-  'grok-4.5-low',
-  'gemini-3.1-pro',
-  'gemini-3-flash',
-  'gemini-3.1-flash-lite',
-];
-
 function getReasoningProviderOptions(
   modelConfig: import('./models.js').ModelConfig
 ): Parameters<typeof generateText>[0]['providerOptions'] | undefined {
@@ -352,7 +338,7 @@ async function queryModel(
 
   // Check if we have an image and if this model supports vision
   const hasImage = imagePath && existsSync(imagePath);
-  const supportsVision = VISION_MODELS.includes(modelName);
+  const supportsVision = modelConfig?.vision === true;
 
   // Get web search tools for this provider
   const tools = modelConfig ? getWebSearchTools(modelConfig) : undefined;
@@ -906,7 +892,7 @@ async function queryModelsWithProgress(options: QueryModelsOptions): Promise<Mod
   console.log(`\n\x1b[36m📡 Querying ${modelNames.length} models...\x1b[0m`);
   if (imagePath) {
     console.log(`Image: ${imagePath}`);
-    console.log(`Vision models: ${modelNames.filter(m => VISION_MODELS.includes(m)).join(', ') || 'none'}`);
+    console.log(`Vision models: ${modelNames.filter(m => config.models[m]?.vision === true).join(', ') || 'none'}`);
   }
   if (liveFilePath) {
     console.log(`Live file: ${liveFilePath}`);
@@ -1661,6 +1647,15 @@ program
   .action(() => {
     const config = loadConfig();
     listModels(config);
+  });
+
+program
+  .command('menu')
+  .description('Print the model selection menu, rendered from models.json')
+  .option('--pick', 'Print the numbered individual-model picker instead')
+  .action((options: { pick?: boolean }) => {
+    const config = loadConfig();
+    printMenu(config, { pick: options.pick });
   });
 
 program

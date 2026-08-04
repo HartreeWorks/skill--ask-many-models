@@ -1,19 +1,15 @@
 ---
 name: ask-many-models
-description: Query different AI model families in parallel and synthesise their answers. Use when the user asks to ask many models, compare GPT/Claude/Gemini/Grok perspectives, get cross-model consensus or disagreement, or invoke /ask-many-models or /amm. For repeated samples from one model, use best-of-n instead.
+description: Query multiple model families and synthesise consensus and disagreement. Use for model comparisons or `/amm`; use `best-of-n` for repeated samples from one model.
 ---
 
 # Ask Many Models
 
 Send the same prompt to multiple AI models in parallel and synthesise their responses into a unified analysis.
 
-## When this skill is invoked
+When this skill is triggered — via `/amm` or natural language — execute the steps below. Do not merely describe what the skill does.
 
-**IMPORTANT**: When this skill is triggered (via `/ask-many-models` or natural language), follow the execution steps below. Do NOT just describe what the skill does.
-
-### Execution Steps
-
-#### Step 1: Get the seed prompt
+## Step 1: Get the seed prompt
 
 **A) Cold start** (conversation just began, no prior discussion):
 If the user provided a prompt/question, treat it as the *seed*. Otherwise ask: "What question would you like to send to multiple AI models?"
@@ -23,40 +19,42 @@ Treat the user's invoking message as the *seed* and the prior conversation as ba
 
 Once a seed exists, proceed to Step 1a.
 
-#### Step 1a: Decide whether to clarify
+### Step 1a: Decide whether to clarify
 
 The seed alone is rarely the strongest prompt. A short clarification quiz usually produces a better result — but forced quizzes on already-specific prompts just add friction.
 
 **Skip the quiz** and go straight to drafting (Step 1d) when ANY of these is true:
+
 - The user explicitly says "just draft", "go", "skip questions", "no questions", or similar.
 - The seed is already long and specific (roughly >300 chars AND states intent, audience, and constraints).
 - Mid-conversation invocation where prior discussion has already nailed down the intent.
 
-**Otherwise**, run Steps 1b and 1c.
-
-**Auto Mode does NOT bypass the quiz.** The clarify/riff pass is the point of this skill — skipping it on the assumption that "the user wants to keep moving" defeats the purpose. Skip only when one of the conditions above is met.
+Those three conditions are the only reasons to skip. The clarify/riff pass is the point of this skill, so a general sense that the user wants to keep moving — including running under Auto Mode — is not one of them.
 
 If borderline, ask once. With `AskUserQuestion` available, use a single-question `AskUserQuestion` call. Without it, print: "I can either ask 2–3 quick clarifying questions first, or just draft — which? (1) clarify (2) draft" and wait for a reply.
 
-#### Step 1b: Clarify intent (tailored quiz)
+### Step 1b: Clarify intent (tailored quiz)
 
 The goal: surface what's *really* motivating the question and what kind of answer would feel useful. Ask 2–4 **tailored** questions. Never boilerplate.
 
 **Always include a motivation question.** Draft 3–4 motivation options based on the *specific seed*, plus an Other free-text field. Tailoring matters more than completeness — generic motivation options are worse than skipping the question.
 
 Examples — for a seed like *"Should I rewrite an email app's onboarding flow?"*:
+
 1. Decide whether to do the rewrite at all
 2. Stress-test a rewrite I'm already planning
 3. Generate options I haven't considered
 4. Find reasons NOT to do it
 
 For a seed like *"Explain how MCP servers work"*:
+
 1. Quick mental model for skim-reading
 2. Deep understanding so I can implement one
 3. Compare with alternatives (plugins, hooks)
 4. Explain to a non-technical person
 
 **Then add 1–2 more tailored questions** keyed to the question shape:
+
 - *Decision* → decision criteria (cost / speed / reversibility / optionality) and timeframe.
 - *Explainer* → depth, audience, prior knowledge.
 - *Critique or review* → kind of pushback wanted (devil's advocate / steelman the alternative / numbers-focused / spot risks).
@@ -64,11 +62,13 @@ For a seed like *"Explain how MCP servers work"*:
 - *Forecast or predict* → timeframe and what would update the user's view.
 
 **Bad (boilerplate — do not do this):**
+
 1. "What's the context?"
 2. "Who is the audience?"
 3. "How long should the answer be?"
 
 **Good (tailored to *"Should I sunset the Outlook add-in?"*):**
+
 1. What's really driving this? (4 motivation options + Other)
 2. Which matters more: cutting maintenance burden, or keeping the user base happy?
 3. Timeframe — next 3 months, or next 2 years?
@@ -100,11 +100,12 @@ Reply with one line per question, e.g.:
 or use free text where Other applies, e.g. "Q1: I want to compare against alternatives I haven't thought of".
 ```
 
-#### Step 1c: Brainstorm riffs (adjacent angles)
+### Step 1c: Brainstorm riffs (adjacent angles)
 
 After clarification, draft 3–5 *adjacent* angles or sub-questions the seed didn't explicitly ask but that often pay off. Each option needs a one-line rationale.
 
 Examples for *"Should I sunset the Outlook add-in?"*:
+
 - "Also ask: what would I need to see to change my mind?" — surfaces update conditions.
 - "Also ask: top 3 failure modes either way." — symmetric risk analysis.
 - "Reframe as: if I were starting today, would I build this?" — disentangles sunk cost.
@@ -134,7 +135,7 @@ Reply with numbers (e.g. "1, 3") or "none".
 
 If the user picks none or skips, that's fine — proceed.
 
-#### Step 1d: Draft and approve the prompt
+### Step 1d: Draft and approve the prompt
 
 Draft a comprehensive prompt. **Incorporate the Step 1b answers directly**: use them to populate motivation, criteria, audience, depth, and timeframe in the draft. Use the chosen-and-skipped riffs from Step 1c to decide which sub-questions to bundle in.
 
@@ -147,6 +148,7 @@ The prompt should:
 5. **Note constraints or preferences** — depth, format, audience, timeframe (drawn from Step 1b answers).
 
 **Prompt drafting checklist:**
+
 - [ ] Background context (2–4 paragraphs minimum)
 - [ ] Any relevant file contents or code (include actual content, not "see attached")
 - [ ] Stated motivation (1 line, from Step 1b)
@@ -154,9 +156,10 @@ The prompt should:
 - [ ] Constraints/audience/timeframe (from Step 1b)
 - [ ] What format/depth of response is useful
 
-**IMPORTANT**: Err on the side of including MORE context than seems necessary. Other models don't have access to this conversation — they only see the prompt. A prompt that seems "too long" is usually about right.
+Err on the side of including MORE context than seems necessary. Other models don't have access to this conversation — they only see the prompt. A prompt that seems "too long" is usually about right.
 
 Save the draft to a uniquely-named file to avoid collisions with concurrent sessions, using a heredoc to preserve formatting:
+
 ```bash
 slug="$(date +%s)"
 cat > "/tmp/amm-prompt-draft-$slug.md" <<'EOF'
@@ -164,7 +167,6 @@ cat > "/tmp/amm-prompt-draft-$slug.md" <<'EOF'
 EOF
 open "/tmp/amm-prompt-draft-$slug.md"
 ```
-Or use a descriptive slug: `/tmp/amm-prompt-draft-<slug>.md`.
 
 After opening the file, also summarise inline (2–3 sentences) so the user can react without switching windows.
 
@@ -179,53 +181,29 @@ After opening the file, also summarise inline (2–3 sentences) so the user can 
 - If Step 1a skipped clarification entirely:
   > "I've drafted a prompt. Review and let me know if you'd like changes, or say 'go' to proceed."
 
-#### Step 2: Model selection
+## Step 2: Model selection
 
-**MANDATORY**: You MUST always present the model selection menu and wait for the user's choice before running any queries. Never skip this step or assume which models the user wants, even if they provided a prompt file path or seem to want a quick answer. The user always chooses.
+Always present the model selection menu and wait for the user's choice before running any queries. Never assume which models the user wants, even when they supplied a prompt file path or seem to want a quick answer. The user always chooses.
 
-**Do NOT use AskUserQuestion for model selection** (it has a 4-option limit which is too restrictive). Instead, print this menu and wait for user input:
+Print the menu by running it — `models.json` is the source of truth, so never transcribe the options from memory:
 
-```
-Which models should I query?
-
-1. ⚡ Defaults - GPT-5.6 Sol (high effort), Claude 4.8 Opus Thinking, Gemini 3.1 Pro, Grok 4.5 (Recommended)
-2. 🚀 Quick - Gemini 3 Flash, Grok 4.5, Claude 4.6 Sonnet (~10s)
-3. 📊 Comprehensive - Defaults + GPT-5.5 Pro (slow, extra compute)
-4. 🔬 Deep Research - OpenAI/Gemini deep research + GPT-5.5 Pro (10-20 min)
-5. 🔧 Pick models - Choose individual models
-
-_(To use a custom system prompt, type SYS after the number, e.g. "1 SYS")_
-
-Enter a number (1-5):
+```bash
+cd "$HOME/.claude/skills/ask-many-models" && yarn query menu
 ```
 
-**Parsing the input**: The user may type just a number (e.g. `1`) or a number followed by `SYS` (e.g. `1 SYS`, `2 sys`, `3 SYS`). Parse the number for model selection. If `SYS` is present (case-insensitive), proceed to Step 2b after resolving models.
+Show its output to the user and wait for a number. Do not use `AskUserQuestion` here; it caps at four options.
 
-If user selects **5 (Pick models)**, print this list and ask for comma-separated numbers:
+The user may type just a number (e.g. `1`) or a number followed by `SYS` (e.g. `1 SYS`, `2 sys`). Parse the number for model selection. If `SYS` is present (case-insensitive), proceed to Step 2b after resolving models.
 
-```
-Available models:
-1. gpt-5.6-sol (high effort, default)
-2. claude-4.8-opus-thinking (default)
-3. gemini-3.1-pro (default)
-4. grok-4.5 (default)
-5. gemini-3-flash
-6. grok-4.5-low
-7. claude-4.6-sonnet
-8. gpt-5.5-pro (slow, extra compute)
-9. openai-deep-research (10-20 min)
-10. gemini-deep-research (10-20 min)
-11. gpt-5.4-thinking
-12. gpt-5.4-pro (slow, extra compute)
-13. gemini-3.1-flash-lite
-14. magistral-medium (Mistral's smartest — frontier reasoning)
+The last option is **pick individual models**. If the user selects it, print the picker and ask for comma-separated numbers:
 
-Enter numbers (e.g. 1,2,5). Add SYS for a custom system prompt (e.g. "1,3 SYS"):
+```bash
+cd "$HOME/.claude/skills/ask-many-models" && yarn query menu --pick
 ```
 
-Then map user's numbers to model IDs. Check for `SYS` in the input as described above.
+Map the user's numbers back to model IDs from that output, and check for `SYS` as above.
 
-#### Step 2b: System prompt (only if user typed SYS)
+### Step 2b: System prompt (only if user typed SYS)
 
 Only run this step if the user included `SYS` in their model selection input. Otherwise skip to Step 3.
 
@@ -255,35 +233,35 @@ Select (A/B/.../N):
 
 If the user presses Enter (empty input), skip — no system prompt.
 
-#### Step 3: Check for images
+## Step 3: Check for images
 
 If an image is in the conversation, save it to:
 `$HOME/.claude/skills/ask-many-models/data/model-outputs/image-TIMESTAMP.png`
 
-#### Step 4: Run the query
+Models without vision support receive just the text prompt, plus a note that an image was provided. The `menu --pick` output tags which models accept images.
 
-Map selection to model IDs:
-- **Defaults**: `gpt-5.6-sol,claude-4.8-opus-thinking,gemini-3.1-pro,grok-4.5`
-- **Quick**: `gemini-3-flash,grok-4.5,claude-4.6-sonnet`
-- **Comprehensive**: `gpt-5.6-sol,claude-4.8-opus-thinking,gemini-3.1-pro,grok-4.5,gpt-5.5-pro`
-- **Deep Research**: `openai-deep-research,gemini-deep-research,gpt-5.5-pro`
+## Step 4: Run the query
 
-Generate slug from prompt (lowercase, non-alphanumeric → hyphens, max 50 chars).
+Pass a preset by name, or explicit model IDs when the user picked their own.
 
-Run the query **without** `--synthesise` — synthesis happens in Step 4b using an in-session subagent so it uses the operator's existing plan quota instead of billing the Anthropic API:
+Run **without** `--synthesise` — synthesis happens in Step 4b using an in-session subagent, so it uses the operator's existing plan quota instead of billing the Anthropic API:
 
 ```bash
 cd "$HOME/.claude/skills/ask-many-models" && yarn query \
-  --models "<model-ids>" \
+  --preset "<preset-name>" \
   --output-format both \
   [--image "<path>"] \
   [--system-prompt "<path>"] \
   "<prompt>"
 ```
 
+For an individually-picked set, swap `--preset` for `--models "<id1>,<id2>,..."`.
+
 The script prints the auto-generated output directory path (`data/model-outputs/<timestamp>-<slug>/`) and writes `results.md`, `results.html`, `responses.json`, `prompt.md`, and `individual/<model>.md` files.
 
-#### Step 4b: Synthesise in-session (subagent)
+Warn the user about duration before starting a deep-research preset — those models take 10–20 minutes each.
+
+### Step 4b: Synthesise in-session (subagent)
 
 Capture the output directory path from Step 4's stdout, then spawn a general-purpose subagent to produce the synthesis:
 
@@ -330,204 +308,21 @@ cd "$HOME/.claude/skills/ask-many-models" && \
 This inserts the synthesis at the top of `results.md` (after the `# Multi-Model Query` metadata, before the first model section) and regenerates `results.html`.
 
 **Fallback** — if for any reason you need API-based synthesis (running unattended, or the in-session context is wedged), omit `--file`:
+
 ```bash
 npx tsx scripts/resynthesise.ts "<output-dir>"
 ```
+
 This calls Claude Opus 4.8 via the Anthropic API and costs tokens.
 
-#### Step 5: Open results
+## Step 5: Open results
 
 Say "Querying: [models]" and open the results file. If `data/user-defaults.json` exists, check it for `open_preference`:
+
 - `"html"` → `open "<output-dir>/results.html"`
 - `"markdown"` (or absent) → `open "<output-dir>/results.md"`
 
----
+## Resources
 
-## Reference documentation
-
-### Claude usage
-
-This skill is intended to be used from Claude, either via natural language or the `/amm` command wrapper. Do not instruct users to install or run a standalone `amm` terminal command.
-
-### Output format
-
-Results can be output as markdown, HTML, or both. An optional preference can be stored in `data/user-defaults.json` under `output_format`. The HTML version uses serif typography optimised for long-form reading.
-
-- `--output-format markdown` — markdown only (default for script invocation)
-- `--output-format html` — HTML only
-- `--output-format both` — both markdown and HTML
-
-### Image Support
-
-Paste an image into your message along with your question to have vision-capable models analyse it:
-
-```
-/amm "What's in this image?" [paste image]
-```
-
-Vision-capable models: GPT-5.6 Sol, GPT-5.5 Thinking, GPT-5.5 Pro, GPT-5.4 Thinking, Claude 4.8 Opus Thinking, Claude 4.6 Sonnet, Grok 4.5, Grok 4.5 Low, Gemini 3.1 Pro, Gemini 3 Flash, Gemini 3.1 Flash-Lite
-
-Models without vision support will receive just the text prompt with a note that an image was provided.
-
-### Internal implementation
-
-The skill currently runs through the local `yarn query` tooling in this directory. Treat that as an implementation detail for maintainers, not a separate user-facing interface.
-
-## Model Presets
-
-| Preset | Models | Use Case |
-|--------|--------|----------|
-| `defaults` | GPT-5.6 Sol, Claude 4.8 Opus, Gemini 3.1 Pro, Grok 4.5 | Recommended cross-provider set |
-| `quick` | Gemini 3 Flash, Grok 4.5, Claude 4.6 Sonnet | Fast responses (~10s) |
-| `comprehensive` | Defaults + GPT-5.5 Pro | Thorough coverage (~60s) |
-| `deep-research` | OpenAI Deep Research, Gemini Deep Research, GPT-5.5 Pro | In-depth research (API, 10-20 min) |
-| `comprehensive-deep` | Defaults + OpenAI/Gemini deep research | Broad frontier and research coverage |
-
-## Deep Research Mode
-
-Deep research models (OpenAI o3-deep-research and Gemini Deep Research) conduct comprehensive web research and take 10-20 minutes per model.
-
-### Using Deep Research
-
-From Claude, choose the "Deep Research" option during model selection.
-
-When deep research is selected:
-1. **Duration warning** is shown (10-20 minutes expected)
-2. **Deep research** models run in parallel with progress updates
-3. **Final synthesis** is inserted after the selected models complete
-4. **Desktop notification** fires on completion when notifications are available
-
-### Context Files
-
-Add context to a deep research query by passing a file (`.md`, `.txt`) or folder with `--context`. Its contents are prepended to the prompt for all selected models.
-
-This is useful for:
-- Research related to a specific project
-- Questions about documents you've written
-- Follow-up research with prior findings
-
-### How It Works
-
-1. Selected research models start in parallel with progress polling.
-2. Each completed response is written to the output directory.
-3. In-session synthesis incorporates the successful responses when the run completes.
-
-## Synthesis Approach
-
-Synthesis is produced by an in-session Opus subagent by default (see Step 4b above) so it uses the operator's existing plan quota. The older API-path synthesis (via `yarn query --synthesise` or `resynthesise.ts` without `--file`) still works and is kept as a fallback for scheduled or unattended runs.
-
-The synthesis identifies:
-
-1. **Consensus** - Points where multiple models agree (high confidence)
-2. **Unique insights** - Valuable points only one model mentioned
-3. **Disagreements** - Contradictions with pros/cons analysis
-4. **Confidence assessment** - Overall reliability based on agreement
-
-### Synthesis Depths
-
-| Depth | Output | Use Case |
-|-------|--------|----------|
-| `brief` | 2-3 sentences | Quick sanity check |
-| `executive` | 1-2 paragraphs + bullets | Default, most queries |
-| `full` | Multi-section document | Important decisions |
-
-## Configuration
-
-### API Keys
-
-Create `.env` from `.env.example`:
-```bash
-cp .env.example .env
-```
-
-Required keys:
-- `OPENAI_API_KEY` - For GPT models
-- `ANTHROPIC_API_KEY` - For Claude models
-- `GOOGLE_GENERATIVE_AI_API_KEY` - For Gemini models
-- `XAI_API_KEY` - For Grok models
-- `MISTRAL_API_KEY` - For Mistral / Magistral models
-
-### Model Configuration
-
-Model definitions and presets are in `models.json` (shipped with the skill). To customise, create a `config.json` with just the keys you want to override—it merges on top of `models.json`. See `config.example.json` for the format.
-
-**When updating model IDs**, also update the `VISION_MODELS` array in `scripts/query.ts` — it has a hardcoded list of vision-capable model keys that must match `models.json`.
-
-## Output Structure
-
-```
-data/model-outputs/
-└── 2026-01-12-1430-your-question/
-    ├── results.md          # Live results + synthesis (markdown)
-    ├── results.html        # Live results + synthesis (HTML)
-    ├── responses.json      # Raw API responses
-    └── individual/
-        ├── gpt-5.4-thinking.md
-        ├── gpt-5.6-sol.md
-        ├── claude-4.8-opus-thinking.md
-        ├── gemini-3.1-pro.md
-        └── grok-4.5.md
-```
-
-## Available Models
-
-### Quick/Standard Models
-
-| Model ID | Display Name | Provider | Vision |
-|----------|--------------|----------|--------|
-| gpt-5.6-sol | GPT-5.6 Sol (high effort) | OpenAI | ✓ |
-| gpt-5.5-thinking | GPT-5.5 | OpenAI | ✓ |
-| gpt-5.5-pro | GPT-5.5 Pro | OpenAI | ✓ |
-| gpt-5.4-thinking | GPT-5.4 | OpenAI | ✓ |
-| claude-4.8-opus-thinking | Claude 4.8 Opus | Anthropic | ✓ |
-| grok-4.5 | Grok 4.5 | xAI | ✓ |
-| gemini-3.1-pro | Gemini 3.1 Pro | Google | ✓ |
-| gemini-3-flash | Gemini 3 Flash | Google | ✓ |
-| gemini-3.1-flash-lite | Gemini 3.1 Flash-Lite | Google | ✓ |
-| gpt-5.4-pro | GPT-5.4 Pro | OpenAI | ✓ |
-| claude-4.6-sonnet | Claude 4.6 Sonnet | Anthropic | ✓ |
-| grok-4.5-low | Grok 4.5 Low Reasoning | xAI | ✓ |
-| magistral-medium | Magistral Medium | Mistral | |
-
-### Deep Research Models
-
-| Model ID | Display Name | Provider | Duration |
-|----------|--------------|----------|----------|
-| openai-deep-research | OpenAI Deep Research | OpenAI | 10-20 min |
-| gemini-deep-research | Gemini Deep Research | Google | 10-20 min |
-
-## Notifications
-
-Desktop notifications via terminal-notifier:
-- Install: `brew install terminal-notifier`
-- Notifications sent when:
-  - Query completes
-  - Async request (deep research) completes
-  - Errors occur
-
-## Slow Models & Progressive Synthesis
-
-Some models (like GPT-5.5 Pro) use extra compute and can take 10-60 minutes for complex queries. These are marked as "slow" in the config.
-
-When slow models are included:
-1. **Progress display** shows real-time status of all models with ✓/✗/◐ icons
-2. **Fast models complete first** → preliminary synthesis runs immediately
-3. **Slow models continue** in background with "(slow)" indicator
-4. **Final synthesis** replaces preliminary when all models complete
-
-The live markdown file updates continuously so you can read responses as they arrive.
-
-## Error Handling
-
-- **Model timeout**: Marked as failed, other responses still synthesised
-- **API error**: Retries with exponential backoff (3 attempts)
-- **Partial failure**: Synthesis proceeds with available responses
-- **Browser not available**: Warns user to restart with `--chrome`
-
-## Tips
-
-1. **Start with `quick` preset** for rapid iteration
-2. **Use defaults for important questions** where quality matters
-3. **Save synthesis prompts** for consistent formatting
-4. **Check individual responses** when synthesis seems off
-5. **Override model IDs** via `config.json` as providers release new models
+- `references/cli-reference.md` — full command and option reference, model configuration, API keys, output structure, synthesis, deep research, error handling.
+- `models.json` — single source of truth for models and presets. Adding a model there is the only edit needed; the menus render from it.

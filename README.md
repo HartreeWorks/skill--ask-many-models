@@ -8,8 +8,6 @@ A Claude Code skill for querying multiple AI models (GPT, Claude, Gemini, Grok) 
 
 **Claude command:** Use `/amm [your question]` if you want an explicit command form inside Claude.
 
-This skill does not install or expose a standalone `amm` terminal command.
-
 **Discussion workflow:** See below.
 
 ## Discussion workflow

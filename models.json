@@ -60,7 +60,8 @@
       "type": "api",
       "max_tokens": 64000,
       "reasoning": true,
-      "reasoning_effort": "high"
+      "reasoning_effort": "high",
+      "vision": true
     },
     "gpt-5.5-thinking": {
       "provider": "openai",
@@ -69,7 +70,8 @@
       "type": "api",
       "max_tokens": 64000,
       "reasoning": true,
-      "reasoning_effort": "high"
+      "reasoning_effort": "high",
+      "vision": true
     },
     "gpt-5.5-pro": {
       "provider": "openai-deep",
@@ -80,7 +82,8 @@
       "slow": true,
       "deep_research": true,
       "timeout_seconds": 3600,
-      "poll_interval_ms": 10000
+      "poll_interval_ms": 10000,
+      "vision": true
     },
     "gpt-5.4-thinking": {
       "provider": "openai",
@@ -89,7 +92,8 @@
       "type": "api",
       "max_tokens": 32000,
       "reasoning": true,
-      "reasoning_effort": "high"
+      "reasoning_effort": "high",
+      "vision": true
     },
     "gpt-5.4-pro": {
       "provider": "openai-deep",
@@ -100,7 +104,8 @@
       "slow": true,
       "deep_research": true,
       "timeout_seconds": 3600,
-      "poll_interval_ms": 10000
+      "poll_interval_ms": 10000,
+      "vision": true
     },
     "claude-4.8-opus-thinking": {
       "provider": "anthropic",
@@ -108,35 +113,40 @@
       "display_name": "Claude 4.8 Opus",
       "type": "api",
       "max_tokens": 32000,
-      "reasoning": true
+      "reasoning": true,
+      "vision": true
     },
     "claude-4.6-sonnet": {
       "provider": "anthropic",
       "model_id": "claude-sonnet-4-6",
       "display_name": "Claude 4.6 Sonnet",
       "type": "api",
-      "max_tokens": 16000
+      "max_tokens": 16000,
+      "vision": true
     },
     "gemini-3.1-pro": {
       "provider": "google",
       "model_id": "gemini-3.1-pro-preview",
       "display_name": "Gemini 3.1 Pro",
       "type": "api",
-      "max_tokens": 32000
+      "max_tokens": 32000,
+      "vision": true
     },
     "gemini-3-flash": {
       "provider": "google",
       "model_id": "gemini-3-flash-preview",
       "display_name": "Gemini 3 Flash",
       "type": "api",
-      "max_tokens": 16000
+      "max_tokens": 16000,
+      "vision": true
     },
     "gemini-3.1-flash-lite": {
       "provider": "google",
       "model_id": "gemini-3.1-flash-lite",
       "display_name": "Gemini 3.1 Flash-Lite",
       "type": "api",
-      "max_tokens": 16000
+      "max_tokens": 16000,
+      "vision": true
     },
     "grok-4.5": {
       "provider": "xai",
@@ -145,7 +155,8 @@
       "type": "api",
       "max_tokens": 32000,
       "reasoning": true,
-      "reasoning_effort": "high"
+      "reasoning_effort": "high",
+      "vision": true
     },
     "grok-4.5-low": {
       "provider": "xai",
@@ -154,7 +165,8 @@
       "type": "api",
       "max_tokens": 16000,
       "reasoning": true,
-      "reasoning_effort": "low"
+      "reasoning_effort": "low",
+      "vision": true
     },
     "magistral-medium": {
       "provider": "mistral",
