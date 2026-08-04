@@ -1,6 +1,6 @@
 ---
 description: Query multiple AI models in parallel and synthesise responses
-allowed-tools: Bash, Read, Write, AskUserQuestion
+allowed-tools: Bash, Read, Write, AskUserQuestion, Agent
 arguments:
   - name: prompt
     description: The question or prompt to send to all models
